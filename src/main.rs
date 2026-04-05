@@ -2,7 +2,7 @@ use dexpr::{ast::value::Value, compiler::Compiler, parser, vm::VM};
 use rust_decimal_macros::dec;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  let input = include_str!("basic_long.dexpr");
+  let input = include_str!("../examples/basic_long.dexpr");
 
   let ast = parser::program(input)?;
 

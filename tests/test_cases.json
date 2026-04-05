@@ -1,0 +1,1288 @@
+[
+  {
+    "name": "single number literal",
+    "code": "42",
+    "expected": { "type": "number", "value": "42" }
+  },
+  {
+    "name": "single string literal",
+    "code": "\"hello\"",
+    "expected": { "type": "string", "value": "hello" }
+  },
+  {
+    "name": "single boolean literal",
+    "code": "true",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "false literal",
+    "code": "false",
+    "expected": { "type": "boolean", "value": false }
+  },
+
+  {
+    "name": "last result: only assignments returns null",
+    "code": "x = 10\ny = 20",
+    "expected": { "type": "null" }
+  },
+  {
+    "name": "last result: bare expression at end",
+    "code": "x = 10\ny = 20\nx + y",
+    "expected": { "type": "number", "value": "30" }
+  },
+  {
+    "name": "last result: multiple bare expressions, last wins",
+    "code": "1\n2\n3",
+    "expected": { "type": "number", "value": "3" }
+  },
+  {
+    "name": "last result: expression then assignment returns null",
+    "code": "42\nx = 10",
+    "expected": { "type": "null" }
+  },
+  {
+    "name": "last result: assignment then bare variable",
+    "code": "x = 99\nx",
+    "expected": { "type": "number", "value": "99" }
+  },
+  {
+    "name": "last result: string expression at end",
+    "code": "x = \"hello\"\nx + \" world\"",
+    "expected": { "type": "string", "value": "hello world" }
+  },
+  {
+    "name": "last result: boolean expression at end",
+    "code": "x = 10\nx > 5",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "last result: if/else returns value",
+    "code": "if true then\n  \"yes\"\nelse\n  \"no\"\nend",
+    "expected": { "type": "string", "value": "yes" }
+  },
+  {
+    "name": "last result: if/else false branch",
+    "code": "if false then\n  \"yes\"\nelse\n  \"no\"\nend",
+    "expected": { "type": "string", "value": "no" }
+  },
+  {
+    "name": "last result: if/else with number",
+    "code": "x = 10\nif x > 5 then\n  x * 2\nelse\n  x * 3\nend",
+    "expected": { "type": "number", "value": "20" }
+  },
+  {
+    "name": "last result: nested if/else",
+    "code": "x = 2\nif x == 1 then\n  \"one\"\nelse if x == 2 then\n  \"two\"\nelse\n  \"other\"\nend",
+    "expected": { "type": "string", "value": "two" }
+  },
+  {
+    "name": "last result: if/else followed by expression",
+    "code": "if true then\n  x = 10\nelse\n  x = 20\nend\nx + 5",
+    "expected": { "type": "number", "value": "15" }
+  },
+  {
+    "name": "last result: assignment after if/else clears result",
+    "code": "if true then\n  100\nend\ny = 5",
+    "expected": { "type": "null" }
+  },
+  {
+    "name": "last result: complex multi-step, last expression wins",
+    "code": "a = 10\nb = 20\nc = a + b\nd = c * 2\nd - 1",
+    "expected": { "type": "number", "value": "59" }
+  },
+  {
+    "name": "last result: log does not affect last result",
+    "code": "log(\"hello\")\n42",
+    "expected": { "type": "number", "value": "42" }
+  },
+
+  {
+    "name": "arithmetic: addition",
+    "code": "10 + 20",
+    "expected": { "type": "number", "value": "30" }
+  },
+  {
+    "name": "arithmetic: subtraction",
+    "code": "50 - 17",
+    "expected": { "type": "number", "value": "33" }
+  },
+  {
+    "name": "arithmetic: multiplication",
+    "code": "6 * 7",
+    "expected": { "type": "number", "value": "42" }
+  },
+  {
+    "name": "arithmetic: division",
+    "code": "100 / 4",
+    "expected": { "type": "number", "value": "25" }
+  },
+  {
+    "name": "arithmetic: modulo",
+    "code": "10 % 3",
+    "expected": { "type": "number", "value": "1" }
+  },
+  {
+    "name": "arithmetic: power",
+    "code": "2 ** 10",
+    "expected": { "type": "number", "value": "1024" }
+  },
+  {
+    "name": "arithmetic: negative number",
+    "code": "-5 + 3",
+    "expected": { "type": "number", "value": "-2" }
+  },
+  {
+    "name": "arithmetic: decimal",
+    "code": "10.5 + 0.5",
+    "expected": { "type": "number", "value": "11.0" }
+  },
+  {
+    "name": "arithmetic: precedence mul before add",
+    "code": "2 + 3 * 4",
+    "expected": { "type": "number", "value": "14" }
+  },
+  {
+    "name": "arithmetic: parentheses override precedence",
+    "code": "(2 + 3) * 4",
+    "expected": { "type": "number", "value": "20" }
+  },
+  {
+    "name": "arithmetic: complex expression",
+    "code": "(3 + 3) * 2 / 3",
+    "expected": { "type": "number", "value": "4" }
+  },
+
+  {
+    "name": "comparison: greater than true",
+    "code": "10 > 5",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "comparison: greater than false",
+    "code": "3 > 5",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "comparison: less than",
+    "code": "3 < 5",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "comparison: greater equal",
+    "code": "5 >= 5",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "comparison: less equal",
+    "code": "5 <= 5",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "comparison: equal numbers",
+    "code": "42 == 42",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "comparison: not equal",
+    "code": "42 != 43",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "comparison: equal numbers exact",
+    "code": "100 == 100",
+    "expected": { "type": "boolean", "value": true }
+  },
+
+  {
+    "name": "logical: and true",
+    "code": "true && true",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "logical: and false",
+    "code": "true && false",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "logical: or",
+    "code": "false || true",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "logical: not",
+    "code": "!false",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "logical: complex",
+    "code": "2 > 1 && 2 >= 2 && !false",
+    "expected": { "type": "boolean", "value": true }
+  },
+
+  {
+    "name": "string: concatenation",
+    "code": "\"hello\" + \" world\"",
+    "expected": { "type": "string", "value": "hello world" }
+  },
+  {
+    "name": "string: upper",
+    "code": "\"hello\".upper()",
+    "expected": { "type": "string", "value": "HELLO" }
+  },
+  {
+    "name": "string: lower",
+    "code": "\"HELLO\".lower()",
+    "expected": { "type": "string", "value": "hello" }
+  },
+  {
+    "name": "string: trim",
+    "code": "\"  hello  \".trim()",
+    "expected": { "type": "string", "value": "hello" }
+  },
+  {
+    "name": "string: trimStart",
+    "code": "\"  hello  \".trimStart()",
+    "expected": { "type": "string", "value": "hello  " }
+  },
+  {
+    "name": "string: trimEnd",
+    "code": "\"  hello  \".trimEnd()",
+    "expected": { "type": "string", "value": "  hello" }
+  },
+  {
+    "name": "string: contains true",
+    "code": "\"hello world\".contains(\"world\")",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "string: contains false",
+    "code": "\"hello world\".contains(\"xyz\")",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "string: startsWith",
+    "code": "\"hello world\".startsWith(\"hello\")",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "string: endsWith",
+    "code": "\"hello world\".endsWith(\"world\")",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "string: replace",
+    "code": "\"hello world\".replace(\"world\", \"rust\")",
+    "expected": { "type": "string", "value": "hello rust" }
+  },
+  {
+    "name": "string: length method",
+    "code": "\"hello\".length()",
+    "expected": { "type": "number", "value": "5" }
+  },
+  {
+    "name": "string: charAt",
+    "code": "\"hello\".charAt(1)",
+    "expected": { "type": "string", "value": "e" }
+  },
+  {
+    "name": "string: substring",
+    "code": "\"hello world\".substring(0, 5)",
+    "expected": { "type": "string", "value": "hello" }
+  },
+  {
+    "name": "string: concat with method result",
+    "code": "\"Merhaba\" + \" duhan\".upper()",
+    "expected": { "type": "string", "value": "Merhaba DUHAN" }
+  },
+
+  {
+    "name": "in operator: string in string",
+    "code": "\"hello\" in \"hello world\"",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "in operator: string not in string",
+    "code": "\"xyz\" in \"hello world\"",
+    "expected": { "type": "boolean", "value": false }
+  },
+
+  {
+    "name": "compound: plus equals",
+    "code": "x = 10\nx += 5\nx",
+    "expected": { "type": "number", "value": "15" }
+  },
+  {
+    "name": "compound: minus equals",
+    "code": "x = 10\nx -= 3\nx",
+    "expected": { "type": "number", "value": "7" }
+  },
+  {
+    "name": "compound: times equals",
+    "code": "x = 10\nx *= 3\nx",
+    "expected": { "type": "number", "value": "30" }
+  },
+  {
+    "name": "compound: divide equals",
+    "code": "x = 10\nx /= 2\nx",
+    "expected": { "type": "number", "value": "5" }
+  },
+  {
+    "name": "compound: modulo equals",
+    "code": "x = 10\nx %= 3\nx",
+    "expected": { "type": "number", "value": "1" }
+  },
+
+  {
+    "name": "if/else: simple true",
+    "code": "if true then \"yes\" else \"no\" end",
+    "expected": { "type": "string", "value": "yes" }
+  },
+  {
+    "name": "if/else: simple false",
+    "code": "if false then \"yes\" else \"no\" end",
+    "expected": { "type": "string", "value": "no" }
+  },
+  {
+    "name": "if/else: else if chain",
+    "code": "x = 3\nif x == 1 then\n  \"one\"\nelse if x == 2 then\n  \"two\"\nelse if x == 3 then\n  \"three\"\nelse\n  \"other\"\nend",
+    "expected": { "type": "string", "value": "three" }
+  },
+  {
+    "name": "if/else: with computed condition",
+    "code": "score = 85\nif score >= 90 then\n  \"A\"\nelse if score >= 80 then\n  \"B\"\nelse if score >= 70 then\n  \"C\"\nelse\n  \"F\"\nend",
+    "expected": { "type": "string", "value": "B" }
+  },
+  {
+    "name": "if/else: nested if",
+    "code": "x = 5\ny = 10\nif x > 3 then\n  if y > 8 then\n    \"both\"\n  else\n    \"only x\"\n  end\nelse\n  \"neither\"\nend",
+    "expected": { "type": "string", "value": "both" }
+  },
+
+  {
+    "name": "comments: line comment ignored",
+    "code": "// this is a comment\n42",
+    "expected": { "type": "number", "value": "42" }
+  },
+  {
+    "name": "comments: block comment ignored",
+    "code": "/* block comment */ 42",
+    "expected": { "type": "number", "value": "42" }
+  },
+  {
+    "name": "comments: inline comment after expression",
+    "code": "10 + 20 // should be 30",
+    "expected": { "type": "number", "value": "30" }
+  },
+
+  {
+    "name": "split: basic split",
+    "code": "\"a,b,c\".split(\",\").length()",
+    "expected": { "type": "number", "value": "3" }
+  },
+  {
+    "name": "split: join back",
+    "code": "\"a,b,c\".split(\",\").join(\"-\")",
+    "expected": { "type": "string", "value": "a-b-c" }
+  },
+  {
+    "name": "split: first element",
+    "code": "\"hello world\".split(\" \").first()",
+    "expected": { "type": "string", "value": "hello" }
+  },
+  {
+    "name": "split: last element",
+    "code": "\"hello world\".split(\" \").last()",
+    "expected": { "type": "string", "value": "world" }
+  },
+  {
+    "name": "split: contains",
+    "code": "\"a,b,c\".split(\",\").contains(\"b\")",
+    "expected": { "type": "boolean", "value": true }
+  },
+
+  {
+    "name": "last result: expression between assignments returns null",
+    "code": "x = 10\n42\ny = 20",
+    "expected": { "type": "null" }
+  },
+  {
+    "name": "last result: compound assignment does not set result",
+    "code": "x = 10\nx += 5",
+    "expected": { "type": "null" }
+  },
+  {
+    "name": "last result: if without else, true branch",
+    "code": "if true then\n  99\nend",
+    "expected": { "type": "number", "value": "99" }
+  },
+  {
+    "name": "last result: chained operations then result",
+    "code": "a = 1\nb = 2\nc = 3\na + b + c",
+    "expected": { "type": "number", "value": "6" }
+  },
+  {
+    "name": "last result: string method as last expr",
+    "code": "name = \"duhan\"\nname.upper()",
+    "expected": { "type": "string", "value": "DUHAN" }
+  },
+  {
+    "name": "last result: comparison as last expr",
+    "code": "x = 10\ny = 20\nx < y",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "last result: logical as last expr",
+    "code": "a = true\nb = false\na && !b",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "last result: multiple if/else, last one wins",
+    "code": "if true then\n  \"first\"\nend\nif true then\n  \"second\"\nend",
+    "expected": { "type": "string", "value": "second" }
+  },
+  {
+    "name": "last result: complex formula",
+    "code": "base = 1000\nrate = 18\nbase * rate / 100",
+    "expected": { "type": "number", "value": "180" }
+  },
+
+  {
+    "name": "globals: simple number",
+    "code": "x * 2",
+    "globals": { "x": { "type": "number", "value": "21" } },
+    "expected": { "type": "number", "value": "42" }
+  },
+  {
+    "name": "globals: string global method",
+    "code": "name.upper()",
+    "globals": {
+      "name": { "type": "string", "value": "duhan" }
+    },
+    "expected": { "type": "string", "value": "DUHAN" }
+  },
+  {
+    "name": "globals: formula with external values",
+    "code": "toplamTutar * kdv / 100",
+    "globals": {
+      "toplamTutar": { "type": "number", "value": "1000" },
+      "kdv": { "type": "number", "value": "18" }
+    },
+    "expected": { "type": "number", "value": "180" }
+  },
+  {
+    "name": "globals: boolean global in condition",
+    "code": "if active then \"yes\" else \"no\" end",
+    "globals": { "active": { "type": "boolean", "value": true } },
+    "expected": { "type": "string", "value": "yes" }
+  },
+  {
+    "name": "globals: override global with assignment",
+    "code": "x = x + 10\nx",
+    "globals": { "x": { "type": "number", "value": "5" } },
+    "expected": { "type": "number", "value": "15" }
+  },
+  {
+    "name": "globals: compound assignment on global",
+    "code": "x += 100\nx",
+    "globals": { "x": { "type": "number", "value": "50" } },
+    "expected": { "type": "number", "value": "150" }
+  },
+  {
+    "name": "globals: string method on global",
+    "code": "name.upper()",
+    "globals": { "name": { "type": "string", "value": "duhan" } },
+    "expected": { "type": "string", "value": "DUHAN" }
+  },
+  {
+    "name": "globals: comparison with global",
+    "code": "if price > 100 then\n  price * discount / 100\nelse\n  0\nend",
+    "globals": {
+      "price": { "type": "number", "value": "200" },
+      "discount": { "type": "number", "value": "10" }
+    },
+    "expected": { "type": "number", "value": "20" }
+  },
+  {
+    "name": "globals: multiple globals in complex expression",
+    "code": "subtotal = quantity * unitPrice\ntax = subtotal * taxRate / 100\nsubtotal + tax",
+    "globals": {
+      "quantity": { "type": "number", "value": "5" },
+      "unitPrice": { "type": "number", "value": "100" },
+      "taxRate": { "type": "number", "value": "18" }
+    },
+    "expected": { "type": "number", "value": "590" }
+  },
+  {
+    "name": "globals: in operator with global string",
+    "code": "keyword in text",
+    "globals": {
+      "keyword": { "type": "string", "value": "finans" },
+      "text": { "type": "string", "value": "bu bir finans raporu" }
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "globals: nested if with number global",
+    "code": "if level == 1 then\n  \"low\"\nelse if level == 2 then\n  \"mid\"\nelse\n  \"high\"\nend",
+    "globals": { "level": { "type": "number", "value": "2" } },
+    "expected": { "type": "string", "value": "mid" }
+  },
+  {
+    "name": "globals: last result with globals, assignment only returns null",
+    "code": "result = x + y",
+    "globals": {
+      "x": { "type": "number", "value": "10" },
+      "y": { "type": "number", "value": "20" }
+    },
+    "expected": { "type": "null" }
+  },
+  {
+    "name": "globals: last result with globals, expression returns value",
+    "code": "result = x + y\nresult",
+    "globals": {
+      "x": { "type": "number", "value": "10" },
+      "y": { "type": "number", "value": "20" }
+    },
+    "expected": { "type": "number", "value": "30" }
+  },
+  {
+    "name": "globals: pricing formula",
+    "code": "base = basePrice * (1 + margin / 100)\nif base > maxPrice then\n  maxPrice\nelse\n  base\nend",
+    "globals": {
+      "basePrice": { "type": "number", "value": "100" },
+      "margin": { "type": "number", "value": "20" },
+      "maxPrice": { "type": "number", "value": "150" }
+    },
+    "expected": { "type": "number", "value": "120" }
+  },
+  {
+    "name": "globals: pricing formula exceeds max",
+    "code": "base = basePrice * (1 + margin / 100)\nif base > maxPrice then\n  maxPrice\nelse\n  base\nend",
+    "globals": {
+      "basePrice": { "type": "number", "value": "200" },
+      "margin": { "type": "number", "value": "50" },
+      "maxPrice": { "type": "number", "value": "250" }
+    },
+    "expected": { "type": "number", "value": "250" }
+  },
+  {
+    "name": "globals: object property access",
+    "code": "user.name",
+    "globals": {
+      "user": { "type": "object", "value": { "name": "Duhan", "age": "30" } }
+    },
+    "expected": { "type": "string", "value": "Duhan" }
+  },
+  {
+    "name": "globals: object in condition",
+    "code": "if user.age > 18 then \"adult\" else \"minor\" end",
+    "globals": {
+      "user": { "type": "object", "value": { "name": "Duhan", "age": "30" } }
+    },
+    "expected": { "type": "string", "value": "adult" }
+  },
+  {
+    "name": "globals: nested object property access",
+    "code": "order.customer.name",
+    "globals": {
+      "order": {
+        "type": "object",
+        "value": {
+          "id": "1001",
+          "customer": {
+            "name": "Duhan",
+            "email": "duhan@test.com"
+          }
+        }
+      }
+    },
+    "expected": { "type": "string", "value": "Duhan" }
+  },
+  {
+    "name": "globals: deeply nested object",
+    "code": "config.db.connection.port",
+    "globals": {
+      "config": {
+        "type": "object",
+        "value": {
+          "db": {
+            "connection": {
+              "host": "localhost",
+              "port": "5432"
+            }
+          }
+        }
+      }
+    },
+    "expected": { "type": "number", "value": "5432" }
+  },
+  {
+    "name": "globals: nested object in formula",
+    "code": "item.price * item.quantity",
+    "globals": {
+      "item": {
+        "type": "object",
+        "value": {
+          "name": "Widget",
+          "price": "25",
+          "quantity": "4"
+        }
+      }
+    },
+    "expected": { "type": "number", "value": "100" }
+  },
+  {
+    "name": "globals: nested object in condition",
+    "code": "if order.payment.method == 1 then\n  order.total * 0.95\nelse\n  order.total\nend",
+    "globals": {
+      "order": {
+        "type": "object",
+        "value": {
+          "total": "200",
+          "payment": {
+            "method": "1",
+            "status": "paid"
+          }
+        }
+      }
+    },
+    "expected": { "type": "number", "value": "190.00" }
+  },
+  {
+    "name": "globals: multiple nested objects",
+    "code": "if customer.tier == 1 then\n  product.price * 0.9\nelse\n  product.price\nend",
+    "globals": {
+      "customer": {
+        "type": "object",
+        "value": { "name": "Duhan", "tier": "1" }
+      },
+      "product": {
+        "type": "object",
+        "value": { "name": "Laptop", "price": "1000" }
+      }
+    },
+    "expected": { "type": "number", "value": "900.0" }
+  },
+  {
+    "name": "globals: nested object with string method",
+    "code": "user.email.upper()",
+    "globals": {
+      "user": {
+        "type": "object",
+        "value": {
+          "name": "Duhan",
+          "email": "duhan@test.com"
+        }
+      }
+    },
+    "expected": { "type": "string", "value": "DUHAN@TEST.COM" }
+  },
+  {
+    "name": "globals: object keys method",
+    "code": "user.keys().length()",
+    "globals": {
+      "user": {
+        "type": "object",
+        "value": { "name": "Duhan", "age": "30", "city": "Istanbul" }
+      }
+    },
+    "expected": { "type": "number", "value": "3" }
+  },
+  {
+    "name": "globals: object contains key",
+    "code": "user.contains(\"email\")",
+    "globals": {
+      "user": {
+        "type": "object",
+        "value": { "name": "Duhan", "email": "duhan@test.com" }
+      }
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "globals: object contains missing key",
+    "code": "user.contains(\"phone\")",
+    "globals": {
+      "user": {
+        "type": "object",
+        "value": { "name": "Duhan", "email": "duhan@test.com" }
+      }
+    },
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "globals: in operator with object",
+    "code": "\"name\" in user",
+    "globals": {
+      "user": {
+        "type": "object",
+        "value": { "name": "Duhan", "age": "30" }
+      }
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "globals: nested object assign to field",
+    "code": "order.status = \"shipped\"\norder.status",
+    "globals": {
+      "order": {
+        "type": "object",
+        "value": { "id": "1001", "status": "pending" }
+      }
+    },
+    "expected": { "type": "string", "value": "shipped" }
+  },
+  {
+    "name": "globals: complex pricing with nested objects",
+    "code": "basePrice = product.price * order.quantity\ndiscountRate = customer.discount\nfinalPrice = basePrice * (1 - discountRate / 100)\nfinalPrice",
+    "globals": {
+      "product": {
+        "type": "object",
+        "value": { "name": "Widget", "price": "50" }
+      },
+      "order": {
+        "type": "object",
+        "value": { "quantity": "10", "urgent": "false" }
+      },
+      "customer": {
+        "type": "object",
+        "value": { "name": "Acme Corp", "discount": "15" }
+      }
+    },
+    "expected": { "type": "number", "value": "425.0" }
+  },
+
+  {
+    "name": "globals: deep path + string method",
+    "code": "order.customer.name.upper()",
+    "globals": {
+      "order": {
+        "type": "object",
+        "value": {
+          "id": "1001",
+          "customer": {
+            "name": "duhan",
+            "email": "duhan@test.com"
+          }
+        }
+      }
+    },
+    "expected": { "type": "string", "value": "DUHAN" }
+  },
+  {
+    "name": "globals: deep path + lower method",
+    "code": "config.app.title.lower()",
+    "globals": {
+      "config": {
+        "type": "object",
+        "value": {
+          "app": {
+            "title": "MY APPLICATION",
+            "version": "1"
+          }
+        }
+      }
+    },
+    "expected": { "type": "string", "value": "my application" }
+  },
+  {
+    "name": "globals: deep path + trim method",
+    "code": "data.record.value.trim()",
+    "globals": {
+      "data": {
+        "type": "object",
+        "value": {
+          "record": {
+            "value": "  hello  "
+          }
+        }
+      }
+    },
+    "expected": { "type": "string", "value": "hello" }
+  },
+  {
+    "name": "globals: deep path + contains method",
+    "code": "order.customer.email.contains(\"@\")",
+    "globals": {
+      "order": {
+        "type": "object",
+        "value": {
+          "id": "1001",
+          "customer": {
+            "name": "Duhan",
+            "email": "duhan@test.com"
+          }
+        }
+      }
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "globals: deep path + startsWith method",
+    "code": "company.address.city.startsWith(\"Ist\")",
+    "globals": {
+      "company": {
+        "type": "object",
+        "value": {
+          "name": "Acme",
+          "address": {
+            "city": "Istanbul",
+            "country": "TR"
+          }
+        }
+      }
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "globals: deep path + replace method",
+    "code": "config.db.host.replace(\"localhost\", \"production.db\")",
+    "globals": {
+      "config": {
+        "type": "object",
+        "value": {
+          "db": {
+            "host": "localhost",
+            "port": "5432"
+          }
+        }
+      }
+    },
+    "expected": { "type": "string", "value": "production.db" }
+  },
+  {
+    "name": "globals: deep path + split + first",
+    "code": "user.profile.fullName.split(\" \").first()",
+    "globals": {
+      "user": {
+        "type": "object",
+        "value": {
+          "id": "42",
+          "profile": {
+            "fullName": "Duhan Balci",
+            "age": "30"
+          }
+        }
+      }
+    },
+    "expected": { "type": "string", "value": "Duhan" }
+  },
+  {
+    "name": "globals: deep path + split + last",
+    "code": "user.profile.fullName.split(\" \").last()",
+    "globals": {
+      "user": {
+        "type": "object",
+        "value": {
+          "id": "42",
+          "profile": {
+            "fullName": "Duhan Balci",
+            "age": "30"
+          }
+        }
+      }
+    },
+    "expected": { "type": "string", "value": "Balci" }
+  },
+  {
+    "name": "globals: deep path + split + join chain",
+    "code": "data.csv.row.split(\",\").join(\" | \")",
+    "globals": {
+      "data": {
+        "type": "object",
+        "value": {
+          "csv": {
+            "row": "a,b,c,d"
+          }
+        }
+      }
+    },
+    "expected": { "type": "string", "value": "a | b | c | d" }
+  },
+  {
+    "name": "globals: deep path + split + length",
+    "code": "data.csv.row.split(\",\").length()",
+    "globals": {
+      "data": {
+        "type": "object",
+        "value": {
+          "csv": {
+            "row": "a,b,c,d"
+          }
+        }
+      }
+    },
+    "expected": { "type": "number", "value": "4" }
+  },
+  {
+    "name": "globals: deep path + split + contains",
+    "code": "data.tags.raw.split(\",\").contains(\"finans\")",
+    "globals": {
+      "data": {
+        "type": "object",
+        "value": {
+          "tags": {
+            "raw": "tech,finans,health"
+          }
+        }
+      }
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "globals: deep path + substring method",
+    "code": "order.ref.code.substring(0, 3)",
+    "globals": {
+      "order": {
+        "type": "object",
+        "value": {
+          "ref": {
+            "code": "ORD-12345"
+          }
+        }
+      }
+    },
+    "expected": { "type": "string", "value": "ORD" }
+  },
+  {
+    "name": "globals: deep path + charAt method",
+    "code": "config.app.code.charAt(0)",
+    "globals": {
+      "config": {
+        "type": "object",
+        "value": {
+          "app": {
+            "code": "XYZ",
+            "version": "1"
+          }
+        }
+      }
+    },
+    "expected": { "type": "string", "value": "X" }
+  },
+  {
+    "name": "globals: deep path + length method on string",
+    "code": "user.profile.bio.length()",
+    "globals": {
+      "user": {
+        "type": "object",
+        "value": {
+          "profile": {
+            "bio": "hello world"
+          }
+        }
+      }
+    },
+    "expected": { "type": "number", "value": "11" }
+  },
+  {
+    "name": "globals: deep path arithmetic",
+    "code": "invoice.line.qty * invoice.line.unitPrice",
+    "globals": {
+      "invoice": {
+        "type": "object",
+        "value": {
+          "id": "INV-001",
+          "line": {
+            "product": "Widget",
+            "qty": "10",
+            "unitPrice": "25"
+          }
+        }
+      }
+    },
+    "expected": { "type": "number", "value": "250" }
+  },
+  {
+    "name": "globals: deep path in condition",
+    "code": "if order.customer.tier == 1 then\n  order.total * 0.9\nelse\n  order.total\nend",
+    "globals": {
+      "order": {
+        "type": "object",
+        "value": {
+          "total": "500",
+          "customer": {
+            "name": "Acme",
+            "tier": "1"
+          }
+        }
+      }
+    },
+    "expected": { "type": "number", "value": "450.0" }
+  },
+  {
+    "name": "globals: deep path + upper in concat",
+    "code": "\"Dear \" + user.info.name.upper()",
+    "globals": {
+      "user": {
+        "type": "object",
+        "value": {
+          "info": {
+            "name": "duhan",
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "expected": { "type": "string", "value": "Dear DUHAN" }
+  },
+  {
+    "name": "globals: 4-level deep path",
+    "code": "a.b.c.d",
+    "globals": {
+      "a": {
+        "type": "object",
+        "value": {
+          "b": {
+            "c": {
+              "d": "42"
+            }
+          }
+        }
+      }
+    },
+    "expected": { "type": "number", "value": "42" }
+  },
+  {
+    "name": "globals: 4-level deep path + method",
+    "code": "a.b.c.d.upper()",
+    "globals": {
+      "a": {
+        "type": "object",
+        "value": {
+          "b": {
+            "c": {
+              "d": "hello"
+            }
+          }
+        }
+      }
+    },
+    "expected": { "type": "string", "value": "HELLO" }
+  },
+  {
+    "name": "globals: deep path object keys",
+    "code": "org.department.team.keys().length()",
+    "globals": {
+      "org": {
+        "type": "object",
+        "value": {
+          "department": {
+            "team": {
+              "lead": "Ali",
+              "dev1": "Veli",
+              "dev2": "Ayse"
+            }
+          }
+        }
+      }
+    },
+    "expected": { "type": "number", "value": "3" }
+  },
+  {
+    "name": "globals: deep path object contains",
+    "code": "org.department.team.contains(\"lead\")",
+    "globals": {
+      "org": {
+        "type": "object",
+        "value": {
+          "department": {
+            "team": {
+              "lead": "Ali",
+              "dev1": "Veli"
+            }
+          }
+        }
+      }
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "globals: deep path + in operator on nested object",
+    "code": "\"dev1\" in org.department.team",
+    "globals": {
+      "org": {
+        "type": "object",
+        "value": {
+          "department": {
+            "team": {
+              "lead": "Ali",
+              "dev1": "Veli"
+            }
+          }
+        }
+      }
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "globals: multiple deep paths from different roots",
+    "code": "customer.address.city.upper().length() + order.shipping.cost",
+    "globals": {
+      "customer": {
+        "type": "object",
+        "value": {
+          "address": {
+            "city": "istanbul"
+          }
+        }
+      },
+      "order": {
+        "type": "object",
+        "value": {
+          "shipping": {
+            "cost": "50",
+            "method": "express"
+          }
+        }
+      }
+    },
+    "expected": { "type": "number", "value": "58" }
+  },
+
+  {
+    "name": "string concat: variable + variable",
+    "code": "a = \"hello\"\nb = \" world\"\na + b",
+    "expected": { "type": "string", "value": "hello world" }
+  },
+  {
+    "name": "string concat: string + number coercion",
+    "code": "\"count: \" + 42",
+    "expected": { "type": "string", "value": "count: 42" }
+  },
+  {
+    "name": "string concat: number + string coercion",
+    "code": "100 + \" items\"",
+    "expected": { "type": "string", "value": "100 items" }
+  },
+  {
+    "name": "string concat: string + boolean coercion",
+    "code": "\"active: \" + true",
+    "expected": { "type": "string", "value": "active: true" }
+  },
+  {
+    "name": "string concat: global string variables",
+    "code": "first + \" \" + last",
+    "globals": {
+      "first": { "type": "string", "value": "Duhan" },
+      "last": { "type": "string", "value": "Balci" }
+    },
+    "expected": { "type": "string", "value": "Duhan Balci" }
+  },
+  {
+    "name": "string concat: string + decimal coercion",
+    "code": "\"price: \" + 19.99",
+    "expected": { "type": "string", "value": "price: 19.99" }
+  },
+
+  {
+    "name": "builtin: abs positive",
+    "code": "abs(42)",
+    "expected": { "type": "number", "value": "42" }
+  },
+  {
+    "name": "builtin: abs negative",
+    "code": "abs(-42)",
+    "expected": { "type": "number", "value": "42" }
+  },
+  {
+    "name": "builtin: min two args",
+    "code": "min(10, 3)",
+    "expected": { "type": "number", "value": "3" }
+  },
+  {
+    "name": "builtin: min three args",
+    "code": "min(10, 3, 7)",
+    "expected": { "type": "number", "value": "3" }
+  },
+  {
+    "name": "builtin: max two args",
+    "code": "max(10, 3)",
+    "expected": { "type": "number", "value": "10" }
+  },
+  {
+    "name": "builtin: max three args",
+    "code": "max(10, 3, 7)",
+    "expected": { "type": "number", "value": "10" }
+  },
+  {
+    "name": "builtin: floor",
+    "code": "floor(3.7)",
+    "expected": { "type": "number", "value": "3" }
+  },
+  {
+    "name": "builtin: floor negative",
+    "code": "floor(-2.3)",
+    "expected": { "type": "number", "value": "-3" }
+  },
+  {
+    "name": "builtin: ceil",
+    "code": "ceil(3.2)",
+    "expected": { "type": "number", "value": "4" }
+  },
+  {
+    "name": "builtin: ceil negative",
+    "code": "ceil(-2.7)",
+    "expected": { "type": "number", "value": "-2" }
+  },
+  {
+    "name": "builtin: round default",
+    "code": "round(3.5)",
+    "expected": { "type": "number", "value": "4" }
+  },
+  {
+    "name": "builtin: round with decimal places",
+    "code": "round(3.14159, 2)",
+    "expected": { "type": "number", "value": "3.14" }
+  },
+  {
+    "name": "builtin: sqrt",
+    "code": "sqrt(16)",
+    "expected": { "type": "number", "value": "4" }
+  },
+  {
+    "name": "builtin: len string",
+    "code": "len(\"hello\")",
+    "expected": { "type": "number", "value": "5" }
+  },
+  {
+    "name": "builtin: toString number",
+    "code": "toString(42)",
+    "expected": { "type": "string", "value": "42" }
+  },
+  {
+    "name": "builtin: toString boolean",
+    "code": "toString(true)",
+    "expected": { "type": "string", "value": "true" }
+  },
+  {
+    "name": "builtin: toNumber string",
+    "code": "toNumber(\"42\")",
+    "expected": { "type": "number", "value": "42" }
+  },
+  {
+    "name": "builtin: toNumber boolean true",
+    "code": "toNumber(true)",
+    "expected": { "type": "number", "value": "1" }
+  },
+  {
+    "name": "builtin: abs in formula",
+    "code": "x = -50\nabs(x) + 10",
+    "expected": { "type": "number", "value": "60" }
+  },
+  {
+    "name": "builtin: round in pricing",
+    "code": "price = 99.999\nround(price, 2)",
+    "expected": { "type": "number", "value": "100.00" }
+  },
+  {
+    "name": "builtin: min/max with globals",
+    "code": "min(max(price, minPrice), maxPrice)",
+    "globals": {
+      "price": { "type": "number", "value": "250" },
+      "minPrice": { "type": "number", "value": "100" },
+      "maxPrice": { "type": "number", "value": "200" }
+    },
+    "expected": { "type": "number", "value": "200" }
+  }
+]

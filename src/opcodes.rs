@@ -5,10 +5,31 @@ pub struct Register(pub u8);
 /// Default (built-in) function IDs for CallDefault opcode
 pub mod default_fn {
   pub const RAND: u8 = 0;
-  // Future: ABS = 1, MIN = 2, MAX = 3, FLOOR = 4, CEIL = 5, ROUND = 6, ...
+  pub const ABS: u8 = 1;
+  pub const MIN: u8 = 2;
+  pub const MAX: u8 = 3;
+  pub const FLOOR: u8 = 4;
+  pub const CEIL: u8 = 5;
+  pub const ROUND: u8 = 6;
+  pub const SQRT: u8 = 7;
+  pub const LEN: u8 = 8;
+  pub const TO_STRING: u8 = 9;
+  pub const TO_NUMBER: u8 = 10;
 
-  /// Lookup table: function name → ID
-  pub const NAMES: &[(&str, u8)] = &[("rand", RAND)];
+  /// Lookup table: function name ��� ID
+  pub const NAMES: &[(&str, u8)] = &[
+    ("rand", RAND),
+    ("abs", ABS),
+    ("min", MIN),
+    ("max", MAX),
+    ("floor", FLOOR),
+    ("ceil", CEIL),
+    ("round", ROUND),
+    ("sqrt", SQRT),
+    ("len", LEN),
+    ("toString", TO_STRING),
+    ("toNumber", TO_NUMBER),
+  ];
 
   /// Get function name by ID
   pub fn name(id: u8) -> Option<&'static str> {
@@ -77,7 +98,8 @@ pub enum OpCodeByte {
   CallDefault = 0xA2,  // Call default (built-in) function by ID
 
   // Result
-  SetResult = 0xB0, // Set expression result (for return value)
+  SetResult = 0xB0,   // Set expression result (for return value)
+  ClearResult = 0xB1, // Clear expression result (assignment resets last result)
 
   // End marker
   End = 0xFF, // End of program
@@ -128,6 +150,7 @@ impl OpCodeByte {
         0xA1 => Some(OpCodeByte::CallExternal),
         0xA2 => Some(OpCodeByte::CallDefault),
         0xB0 => Some(OpCodeByte::SetResult),
+        0xB1 => Some(OpCodeByte::ClearResult),
         0xFF => Some(OpCodeByte::End),
         _ => None,
       };
@@ -178,6 +201,7 @@ impl OpCodeByte {
       OpCodeByte::CallExternal => "CallExternal",
       OpCodeByte::CallDefault => "Rand",
       OpCodeByte::SetResult => "SetResult",
+      OpCodeByte::ClearResult => "ClearResult",
       OpCodeByte::End => "End",
     }
   }

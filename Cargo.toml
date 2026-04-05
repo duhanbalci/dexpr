@@ -2,6 +2,9 @@
 name = "dexpr"
 version = "0.1.0"
 edition = "2021"
+description = "Embeddable expression evaluator and bytecode VM"
+license = "MIT"
+exclude = ["editor/", "wasm/", "docs/", ".vscode/", "benches/", "scripts/", "CLAUDE.md", "flamegraph.svg", "profile.json.gz", "gen.js", "*.dexpr", "*.txt", "src/main.rs"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -35,6 +38,7 @@ serde_json = "1"
 
 [dev-dependencies]
 criterion = { version = "0.8.2", features = ["html_reports"] }
+serde = { version = "1", features = ["derive"] }
 
 [[bench]]
 name = "my_benchmark"

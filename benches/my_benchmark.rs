@@ -7,7 +7,7 @@ use rust_decimal_macros::dec;
 pub fn criterion_benchmark(c: &mut Criterion) {
   // 1. Parser Benchmark
   c.bench_function("parser_long", |b| {
-    let input = include_str!("../src/bench_long.dexpr");
+    let input = include_str!("../examples/bench_long.dexpr");
     b.iter(|| {
       let _ = parser::program(input).unwrap();
     })
@@ -15,7 +15,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
   // 2. Compiler Benchmark
   c.bench_function("compiler_long", |b| {
-    let input = include_str!("../src/bench_long.dexpr");
+    let input = include_str!("../examples/bench_long.dexpr");
     let ast = parser::program(input).unwrap();
     b.iter(|| {
       let mut compiler = Compiler::new();
@@ -27,7 +27,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
   // basic_long.dexpr benchmark
   c.bench_function("vm_basic_long", |b| {
-    let input = include_str!("../src/basic_long.dexpr");
+    let input = include_str!("../examples/basic_long.dexpr");
     let ast = parser::program(input).unwrap();
     let mut compiler = Compiler::new();
     let bytecode = compiler.compile(ast).unwrap();
@@ -40,7 +40,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
   // Long code benchmark (using bench_long.dexpr)
   c.bench_function("vm_long", |b| {
-    let input = include_str!("../src/bench_long.dexpr");
+    let input = include_str!("../examples/bench_long.dexpr");
     let ast = parser::program(input).unwrap();
     let mut compiler = Compiler::new();
     let bytecode = compiler.compile(ast).unwrap();

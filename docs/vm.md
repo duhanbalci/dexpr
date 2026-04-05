@@ -11,7 +11,9 @@ Register tabanlı sanal makine. Bytecode'u çalıştırır, 8 register ve global
 | Dosya | İçerik |
 |-------|--------|
 | `vm/mod.rs` | Modül export'ları |
-| `vm/vm.rs` | Ana VM implementasyonu |
+| `vm/vm.rs` | Ana VM implementasyonu (core çalıştırma döngüsü) |
+| `vm/methods.rs` | Metod dispatch (String, StringList, NumberList, Object metodları) |
+| `vm/builtins.rs` | Built-in fonksiyon implementasyonları (abs, min, max, floor, ceil, round, sqrt, len, toString, toNumber) |
 | `vm/error.rs` | Hata türleri (VMError) |
 | `vm/debug_info.rs` | Bytecode offset → kaynak konum eşleştirme |
 
@@ -120,6 +122,7 @@ struct VM<'a> {
 ### Aritmetik
 - **`binary_op(f, name)`** — Genel handler: iki operand register'ı oku, fonksiyonu uygula, sonucu kaydet
 - Sıfıra bölme kontrolü yapılır
+- **`Add` opcode:** Sayısal toplama yanında string birleştirmeyi de destekler. Otomatik tip dönüşümü (auto-coercion) yapılır: String+String, String+Number, Number+String, String+Boolean kombinasyonları birleştirme olarak çalışır
 - **`handle_neg()`** — Sadece Number tipinde tekli negatif
 
 ### Karşılaştırma
@@ -133,7 +136,7 @@ struct VM<'a> {
 - **`handle_jump_if_false()`** — Register `Boolean(false)` ise atla
 
 ### String, Nesne ve Metodlar
-- **`handle_concat()`** — İki String register'ını birleştir
+- **`handle_concat()`** — İki register'ı birleştir (karışık tip dönüşümü destekler: String, Number, Boolean otomatik olarak String'e dönüştürülür)
 - **`handle_get_property()`** — Object register'ından alan oku, alan yoksa `Null` döndür
 - **`handle_set_property()`** — Object register'ında alan değerini ayarla
 - **`handle_method_call()`** — Nesne register'ı, metod adı, argümanlar
@@ -153,6 +156,18 @@ struct VM<'a> {
 ### Built-in
 - **`handle_log()`** — Register değerini stdout'a yazdır
 - **`rand(min, max)`** — min ile max arasında rastgele tamsayı üret (varsayılan harici fonksiyon)
+- **`abs(n)`** — Mutlak değer
+- **`min(a, b, ...)`** — Verilen değerlerin minimumu
+- **`max(a, b, ...)`** — Verilen değerlerin maksimumu
+- **`floor(n)`** — Aşağı yuvarlama
+- **`ceil(n)`** — Yukarı yuvarlama
+- **`round(n[, places])`** — Yuvarlama (opsiyonel ondalık basamak sayısı)
+- **`sqrt(n)`** — Karekök
+- **`len(v)`** — Değerin uzunluğu (String, List, Object)
+- **`toString(v)`** — Değeri String'e dönüştür
+- **`toNumber(v)`** — Değeri Number'a dönüştür
+
+> **Not:** Built-in fonksiyon implementasyonları `vm/builtins.rs` dosyasında, sabit ID tanımları `src/opcodes.rs` içindeki `default_fn` modülündedir.
 
 ---
 

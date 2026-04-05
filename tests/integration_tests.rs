@@ -959,27 +959,19 @@ result = x % y"#;
 }
 
 #[test]
-fn test_error_location_type_mismatch() {
+fn test_string_number_auto_coercion() {
+  // string + number now auto-coerces to string concatenation
   let code = r#"x = "hello"
 y = 5
-result = x + y"#;
+x + y"#;
 
+  let ast = parser::program(code).unwrap();
   let mut compiler = Compiler::new();
-  let (bytecode, debug_info) = compiler
-    .compile_from_source(code)
-    .expect("Failed to compile");
-
+  let bytecode = compiler.compile(ast).unwrap();
   let mut vm = VM::new(&bytecode);
-  vm.set_debug_info(&debug_info);
+  let result = vm.execute().unwrap();
 
-  let err = vm.execute().unwrap_err();
-  let err_msg = err.to_string();
-
-  assert!(
-    err_msg.contains("line 3"),
-    "Error should contain line 3, got: {}",
-    err_msg
-  );
+  assert_eq!(result, Value::String("hello5".into()));
 }
 
 #[test]

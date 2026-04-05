@@ -223,6 +223,7 @@ pub fn disassemble_bytecode(bytecode: &[u8]) -> Vec<String> {
         Ok(reg) => format!("{:04x}: SetResult r{}", start_position, reg),
         Err(_) => format!("{:04x}: SetResult (truncated)", start_position),
       },
+      OpCodeByte::ClearResult => format!("{:04x}: ClearResult", start_position),
       OpCodeByte::End => format!("{:04x}: End", start_position),
     };
 

@@ -12,6 +12,12 @@ bench:
 run:
     cargo run --release
 
+# --- Publish ---
+
+# Publish to Gitea cargo registry
+publish:
+    cargo publish --registry gitea --allow-dirty
+
 # --- WASM ---
 
 # Build wasm package (web target)

@@ -85,6 +85,25 @@ Bytecode komut setini (instruction set) tanımlar. Her opcode bir `u8` değerine
 
 ---
 
+## Built-in Fonksiyon ID'leri
+
+`default_fn` modülü, built-in fonksiyonlar için sabit ID'ler tanımlar. `CallExternal` opcode'u bu ID'leri kullanarak built-in fonksiyonları çağırır.
+
+| Sabit | ID | Fonksiyon |
+|-------|----|-----------|
+| `ABS` | `1` | Mutlak değer |
+| `MIN` | `2` | Minimum değer |
+| `MAX` | `3` | Maksimum değer |
+| `FLOOR` | `4` | Aşağı yuvarlama |
+| `CEIL` | `5` | Yukarı yuvarlama |
+| `ROUND` | `6` | Yuvarlama |
+| `SQRT` | `7` | Karekök |
+| `LEN` | `8` | Uzunluk |
+| `TO_STRING` | `9` | String'e dönüştür |
+| `TO_NUMBER` | `10` | Sayıya dönüştür |
+
+---
+
 ## Hızlı Lookup Tablosu
 
 `LOOKUP[256]` statik dizisi, O(1) karmaşıklıkta byte-to-opcode dönüşümü sağlar. `from_byte(u8)` metodu bu tabloyu kullanır.

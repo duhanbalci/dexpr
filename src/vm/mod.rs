@@ -1,5 +1,7 @@
+mod builtins;
 mod debug_info;
 pub mod error;
+mod methods;
 mod vm;
 
 pub use debug_info::DebugInfo;

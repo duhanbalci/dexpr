@@ -170,6 +170,7 @@ impl Compiler {
     let expr_reg = self.compile_expr(expr)?;
     self.emit_store_global(name, expr_reg);
     self.free_register(expr_reg);
+    self.emit_byte(OpCodeByte::ClearResult.to_byte());
     Ok(())
   }
 
@@ -229,6 +230,7 @@ impl Compiler {
     // Store root back to global
     self.emit_store_global(root, root_reg);
     self.free_register(root_reg);
+    self.emit_byte(OpCodeByte::ClearResult.to_byte());
     Ok(())
   }
 
@@ -319,13 +321,7 @@ impl Compiler {
     let result_reg = self.allocate_register()?;
 
     let opcode = match op {
-      Op::Add => {
-        if self.is_string_concatenation(left, right) {
-          OpCodeByte::Concat
-        } else {
-          OpCodeByte::Add
-        }
-      }
+      Op::Add => OpCodeByte::Add,
       Op::Sub => OpCodeByte::Sub,
       Op::Mul => OpCodeByte::Mul,
       Op::Div => OpCodeByte::Div,
@@ -357,12 +353,6 @@ impl Compiler {
     self.free_register(right_reg);
 
     Ok(result_reg)
-  }
-
-  /// Check if binary operation is string concatenation
-  fn is_string_concatenation(&self, left: &Expr, right: &Expr) -> bool {
-    matches!(left, Expr::Value(Value::String(_)))
-      || matches!(right, Expr::Value(Value::String(_)))
   }
 
   /// Compile a unary operation

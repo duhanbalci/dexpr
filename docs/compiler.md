@@ -96,8 +96,9 @@ Parse ile birlikte pozisyon bilgisi de toplar ve `DebugInfo` üretir.
 2. Sağ operandı register'a derle
 3. Sonuç register'ı ayır
 4. Uygun opcode'u emit et (Add, Sub, Mul, vs.)
-5. **Özel durum:** String + String → `Concat` kullanılır
-6. Operand register'ları serbest bırak
+5. Operand register'ları serbest bırak
+
+> **Not:** String birleştirme derleme zamanında ayırt edilmez. `Op::Add` her zaman `OpCodeByte::Add` emit eder; string birleştirme ve otomatik tip dönüşümü VM tarafından çalışma zamanında (runtime) ele alınır.
 
 ### UnaryOp (Tekli Operasyon)
 1. Operandı register'a derle

@@ -315,6 +315,7 @@ dependencies = [
  "rust_decimal",
  "rust_decimal_macros",
  "rustc-hash",
+ "serde",
  "serde_json",
  "smallvec",
  "smol_str",
