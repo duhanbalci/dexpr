@@ -1,4 +1,5 @@
 use crate::{ast::value::Value, bytecode::BytecodeReader, opcodes::OpCodeByte};
+use std::rc::Rc;
 use micromap::Map;
 use rust_decimal::{Decimal, MathematicalOps};
 use rustc_hash::FxHashMap;
@@ -704,7 +705,7 @@ impl<'a> VM<'a> {
     let value = self.registers[val].clone();
     match &mut self.registers[obj] {
       Value::Object(map) => {
-        map.insert(SmolStr::from(prop), value);
+        Rc::make_mut(map).insert(SmolStr::from(prop), value);
       }
       other => {
         return Err(VMError::RuntimeError(format!(

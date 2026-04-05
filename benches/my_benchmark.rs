@@ -4,6 +4,7 @@ use indexmap::IndexMap;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use smol_str::SmolStr;
+use std::rc::Rc;
 
 /// Helper: compile source to bytecode
 fn compile(source: &str) -> Vec<u8> {
@@ -18,7 +19,7 @@ fn sample_object(n: usize) -> Value {
   for i in 0..n {
     map.insert(SmolStr::new(format!("field{}", i)), Value::Number(Decimal::from(i)));
   }
-  Value::Object(Box::new(map))
+  Value::Object(Rc::new(map))
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -110,7 +111,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
   // StringList method — clone entire Vec per call
   c.bench_function("vm_strlist_method_length", |b| {
     let bytecode = compile("items.length()");
-    let items = Value::StringList(Box::new((0..50).map(|i| SmolStr::new(format!("item{}", i))).collect()));
+    let items = Value::StringList(Rc::new((0..50).map(|i| SmolStr::new(format!("item{}", i))).collect()));
     b.iter(|| {
       let mut vm = VM::new(&bytecode);
       vm.set_global("items", items.clone());
@@ -120,7 +121,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
   c.bench_function("vm_numlist_method_sum", |b| {
     let bytecode = compile("nums.sum()");
-    let nums = Value::NumberList(Box::new((0..100).map(Decimal::from).collect()));
+    let nums = Value::NumberList(Rc::new((0..100).map(Decimal::from).collect()));
     b.iter(|| {
       let mut vm = VM::new(&bytecode);
       vm.set_global("nums", nums.clone());

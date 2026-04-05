@@ -3,6 +3,7 @@ use indexmap::IndexMap;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal_macros::dec;
 use smol_str::SmolStr;
+use std::rc::Rc;
 
 /// Helper to run code and get the value of "result" variable
 fn run_and_get_result(code: &str) -> Value {
@@ -628,7 +629,7 @@ fn test_numberlist_contains() {
   let mut compiler = Compiler::new();
   let bytecode = compiler.compile(ast).expect("compile");
   let mut vm = VM::new(&bytecode);
-  vm.set_global("nums", Value::NumberList(Box::new(vec![dec!(1), dec!(2), dec!(3), dec!(4)])));
+  vm.set_global("nums", Value::NumberList(Rc::new(vec![dec!(1), dec!(2), dec!(3), dec!(4)])));
   vm.execute().expect("execute");
   assert_eq!(vm.get_global("result").unwrap(), &Value::Boolean(true));
 }
@@ -639,7 +640,7 @@ fn test_numberlist_indexof() {
   let mut compiler = Compiler::new();
   let bytecode = compiler.compile(ast).expect("compile");
   let mut vm = VM::new(&bytecode);
-  vm.set_global("nums", Value::NumberList(Box::new(vec![dec!(1), dec!(2), dec!(3)])));
+  vm.set_global("nums", Value::NumberList(Rc::new(vec![dec!(1), dec!(2), dec!(3)])));
   vm.execute().expect("execute");
   assert_eq!(vm.get_global("result").unwrap(), &Value::Number(dec!(2)));
 }
@@ -650,7 +651,7 @@ fn test_numberlist_slice() {
   let mut compiler = Compiler::new();
   let bytecode = compiler.compile(ast).expect("compile");
   let mut vm = VM::new(&bytecode);
-  vm.set_global("nums", Value::NumberList(Box::new(vec![dec!(10), dec!(20), dec!(30), dec!(40)])));
+  vm.set_global("nums", Value::NumberList(Rc::new(vec![dec!(10), dec!(20), dec!(30), dec!(40)])));
   vm.execute().expect("execute");
   // slice(1,3) = [20, 30], sum = 50
   assert_eq!(vm.get_global("result").unwrap(), &Value::Number(dec!(50)));
@@ -662,7 +663,7 @@ fn test_numberlist_reverse() {
   let mut compiler = Compiler::new();
   let bytecode = compiler.compile(ast).expect("compile");
   let mut vm = VM::new(&bytecode);
-  vm.set_global("nums", Value::NumberList(Box::new(vec![dec!(1), dec!(2), dec!(3)])));
+  vm.set_global("nums", Value::NumberList(Rc::new(vec![dec!(1), dec!(2), dec!(3)])));
   vm.execute().expect("execute");
   assert_eq!(vm.get_global("result").unwrap(), &Value::Number(dec!(3)));
 }
@@ -673,7 +674,7 @@ fn test_numberlist_sort() {
   let mut compiler = Compiler::new();
   let bytecode = compiler.compile(ast).expect("compile");
   let mut vm = VM::new(&bytecode);
-  vm.set_global("nums", Value::NumberList(Box::new(vec![dec!(30), dec!(10), dec!(20)])));
+  vm.set_global("nums", Value::NumberList(Rc::new(vec![dec!(30), dec!(10), dec!(20)])));
   vm.execute().expect("execute");
   assert_eq!(vm.get_global("result").unwrap(), &Value::Number(dec!(10)));
 }
@@ -684,7 +685,7 @@ fn test_numberlist_isempty() {
   let mut compiler = Compiler::new();
   let bytecode = compiler.compile(ast).expect("compile");
   let mut vm = VM::new(&bytecode);
-  vm.set_global("nums", Value::NumberList(Box::new(vec![])));
+  vm.set_global("nums", Value::NumberList(Rc::new(vec![])));
   vm.execute().expect("execute");
   assert_eq!(vm.get_global("result").unwrap(), &Value::Boolean(true));
 }
@@ -1028,7 +1029,7 @@ fn make_object(entries: Vec<(&str, Value)>) -> Value {
   for (k, v) in entries {
     map.insert(SmolStr::new(k), v);
   }
-  Value::Object(Box::new(map))
+  Value::Object(Rc::new(map))
 }
 
 #[test]
@@ -1113,7 +1114,7 @@ fn test_object_method_keys() {
   let result = run_expr_with_globals("person.keys()", vec![("person", obj)]);
   assert_eq!(
     result,
-    Value::StringList(Box::new(vec![SmolStr::new("name"), SmolStr::new("age")]))
+    Value::StringList(Rc::new(vec![SmolStr::new("name"), SmolStr::new("age")]))
   );
 }
 
@@ -1177,7 +1178,7 @@ fn test_object_method_values_strings() {
   let result = run_expr_with_globals("obj.values()", vec![("obj", obj)]);
   assert_eq!(
     result,
-    Value::StringList(Box::new(vec![SmolStr::new("x"), SmolStr::new("y")]))
+    Value::StringList(Rc::new(vec![SmolStr::new("x"), SmolStr::new("y")]))
   );
 }
 
@@ -1188,7 +1189,7 @@ fn test_object_method_values_numbers() {
     ("b", Value::Number(dec!(2))),
   ]);
   let result = run_expr_with_globals("obj.values()", vec![("obj", obj)]);
-  assert_eq!(result, Value::NumberList(Box::new(vec![dec!(1), dec!(2)])));
+  assert_eq!(result, Value::NumberList(Rc::new(vec![dec!(1), dec!(2)])));
 }
 
 #[test]

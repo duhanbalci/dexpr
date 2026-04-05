@@ -2,6 +2,7 @@ use indexmap::IndexMap;
 use rust_decimal::Decimal;
 use smol_str::SmolStr;
 use std::fmt;
+use std::rc::Rc;
 
 /// Value type for the dExpr language
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -11,9 +12,9 @@ pub enum Value {
   Number(Decimal),
   String(SmolStr),
   Boolean(bool),
-  NumberList(Box<Vec<Decimal>>),
-  StringList(Box<Vec<SmolStr>>),
-  Object(Box<IndexMap<SmolStr, Value>>),
+  NumberList(Rc<Vec<Decimal>>),
+  StringList(Rc<Vec<SmolStr>>),
+  Object(Rc<IndexMap<SmolStr, Value>>),
 }
 
 /// Type tag constants for serialization
@@ -209,19 +210,19 @@ impl From<SmolStr> for Value {
 
 impl From<Vec<Decimal>> for Value {
   fn from(v: Vec<Decimal>) -> Self {
-    Value::NumberList(Box::new(v))
+    Value::NumberList(Rc::new(v))
   }
 }
 
 impl From<Vec<SmolStr>> for Value {
   fn from(v: Vec<SmolStr>) -> Self {
-    Value::StringList(Box::new(v))
+    Value::StringList(Rc::new(v))
   }
 }
 
 impl From<IndexMap<SmolStr, Value>> for Value {
   fn from(m: IndexMap<SmolStr, Value>) -> Self {
-    Value::Object(Box::new(m))
+    Value::Object(Rc::new(m))
   }
 }
 
@@ -292,7 +293,7 @@ impl Value {
           list.push(Decimal::deserialize(decimal_bytes));
         }
 
-        Ok((Value::NumberList(Box::new(list)), pos))
+        Ok((Value::NumberList(Rc::new(list)), pos))
       }
       TYPE_STRING_LIST => {
         if bytes.len() < pos + 2 {
@@ -321,7 +322,7 @@ impl Value {
           list.push(s.into());
         }
 
-        Ok((Value::StringList(Box::new(list)), pos))
+        Ok((Value::StringList(Rc::new(list)), pos))
       }
       TYPE_OBJECT => {
         if bytes.len() < pos + 2 {
@@ -354,7 +355,7 @@ impl Value {
           map.insert(key.into(), val);
         }
 
-        Ok((Value::Object(Box::new(map)), pos))
+        Ok((Value::Object(Rc::new(map)), pos))
       }
       _ => Err(format!("Unknown type tag: {}", type_tag)),
     }
@@ -407,7 +408,7 @@ impl Value {
       serde_json::Value::String(s) => Ok(Value::String(SmolStr::new(s))),
       serde_json::Value::Array(arr) => {
         if arr.is_empty() {
-          return Ok(Value::StringList(Box::new(Vec::new())));
+          return Ok(Value::StringList(Rc::new(Vec::new())));
         }
         // Check if all elements are the same type
         let first = &arr[0];
@@ -418,12 +419,12 @@ impl Value {
               nums.push(n);
             }
           }
-          Ok(Value::NumberList(Box::new(nums)))
+          Ok(Value::NumberList(Rc::new(nums)))
         } else if first.is_string() && arr.iter().all(|v| v.is_string()) {
           let strings: Vec<SmolStr> = arr.iter()
             .filter_map(|v| v.as_str().map(SmolStr::new))
             .collect();
-          Ok(Value::StringList(Box::new(strings)))
+          Ok(Value::StringList(Rc::new(strings)))
         } else {
           Err("Arrays must contain all numbers or all strings".to_string())
         }
@@ -433,7 +434,7 @@ impl Value {
         for (k, v) in obj {
           map.insert(SmolStr::new(k), Self::from_json_value(v)?);
         }
-        Ok(Value::Object(Box::new(map)))
+        Ok(Value::Object(Rc::new(map)))
       }
     }
   }

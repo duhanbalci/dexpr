@@ -1,6 +1,7 @@
 use crate::ast::value::Value;
 use rust_decimal::{prelude::ToPrimitive, Decimal};
 use smol_str::{SmolStr, StrExt};
+use std::rc::Rc;
 
 use super::error::VMError;
 use super::vm::VM;
@@ -72,7 +73,7 @@ impl<'a> VM<'a> {
         match &args[0] {
           Value::String(delim) => {
             let parts: Vec<SmolStr> = s.split(delim.as_str()).map(SmolStr::new).collect();
-            Ok(Value::StringList(Box::new(parts)))
+            Ok(Value::StringList(Rc::new(parts)))
           }
           _ => Err(VMError::RuntimeError(
             "split() requires a string delimiter".to_string(),
@@ -263,7 +264,7 @@ impl<'a> VM<'a> {
             } else {
               list.len()
             };
-            Ok(Value::StringList(Box::new(list[start..end].to_vec())))
+            Ok(Value::StringList(Rc::new(list[start..end].to_vec())))
           }
           _ => Err(VMError::RuntimeError("slice() requires a number index".to_string())),
         }
@@ -271,12 +272,12 @@ impl<'a> VM<'a> {
       "reverse" => {
         let mut reversed = list.to_vec();
         reversed.reverse();
-        Ok(Value::StringList(Box::new(reversed)))
+        Ok(Value::StringList(Rc::new(reversed)))
       }
       "sort" => {
         let mut sorted = list.to_vec();
         sorted.sort();
-        Ok(Value::StringList(Box::new(sorted)))
+        Ok(Value::StringList(Rc::new(sorted)))
       }
       "join" => {
         let delim = if args.is_empty() {
@@ -368,7 +369,7 @@ impl<'a> VM<'a> {
             } else {
               list.len()
             };
-            Ok(Value::NumberList(Box::new(list[start..end].to_vec())))
+            Ok(Value::NumberList(Rc::new(list[start..end].to_vec())))
           }
           _ => Err(VMError::RuntimeError("slice() requires a number index".to_string())),
         }
@@ -376,12 +377,12 @@ impl<'a> VM<'a> {
       "reverse" => {
         let mut reversed = list.to_vec();
         reversed.reverse();
-        Ok(Value::NumberList(Box::new(reversed)))
+        Ok(Value::NumberList(Rc::new(reversed)))
       }
       "sort" => {
         let mut sorted = list.to_vec();
         sorted.sort();
-        Ok(Value::NumberList(Box::new(sorted)))
+        Ok(Value::NumberList(Rc::new(sorted)))
       }
       "sum" => {
         let sum: Decimal = list.iter().sum();
@@ -426,12 +427,12 @@ impl<'a> VM<'a> {
     match method {
       "keys" => {
         let keys: Vec<SmolStr> = map.keys().cloned().collect();
-        Ok(Value::StringList(Box::new(keys)))
+        Ok(Value::StringList(Rc::new(keys)))
       }
       "values" => {
         let vals: Vec<Value> = map.values().cloned().collect();
         if vals.is_empty() {
-          Ok(Value::StringList(Box::new(Vec::new())))
+          Ok(Value::StringList(Rc::new(Vec::new())))
         } else if vals.iter().all(|v| matches!(v, Value::String(_))) {
           let strings: Vec<SmolStr> = vals
             .into_iter()
@@ -440,7 +441,7 @@ impl<'a> VM<'a> {
               _ => unreachable!(),
             })
             .collect();
-          Ok(Value::StringList(Box::new(strings)))
+          Ok(Value::StringList(Rc::new(strings)))
         } else if vals.iter().all(|v| matches!(v, Value::Number(_))) {
           let numbers: Vec<Decimal> = vals
             .into_iter()
@@ -449,7 +450,7 @@ impl<'a> VM<'a> {
               _ => unreachable!(),
             })
             .collect();
-          Ok(Value::NumberList(Box::new(numbers)))
+          Ok(Value::NumberList(Rc::new(numbers)))
         } else {
           Err(VMError::RuntimeError(
             "values() only works when all values are the same type (String or Number)".to_string(),

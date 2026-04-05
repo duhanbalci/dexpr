@@ -3,6 +3,7 @@ use indexmap::IndexMap;
 use rust_decimal::Decimal;
 use smol_str::SmolStr;
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::str::FromStr;
 
 #[derive(serde::Deserialize)]
@@ -55,7 +56,7 @@ fn value_def_to_value(def: &ValueDef) -> Value {
                     };
                     map.insert(SmolStr::from(k.as_str()), val);
                 }
-                Value::Object(Box::new(map))
+                Value::Object(Rc::new(map))
             }
             let obj = def.value.as_ref().unwrap().as_object().unwrap();
             json_obj_to_value(obj)
