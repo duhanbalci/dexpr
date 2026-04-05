@@ -1,0 +1,28 @@
+a = 10.2
+b = a + 5.5
+c = 2.4
+
+log(b + c)
+
+log("Merhaba" + " duhan".upper())
+
+log((3+3)*2/3)
+
+t = 3+3
+log(t*2/3)
+
+if true then
+	log("true")
+else
+	log("false")
+end
+
+aaa = false
+
+if false && true then
+	log("11")
+else if 2 > 1 && 2 >= 2 && !aaa then
+	log("22")
+else if true then
+	log("33")
+end

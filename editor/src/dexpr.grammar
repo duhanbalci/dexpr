@@ -1,0 +1,124 @@
+@top Program { statement* }
+
+@skip { space | LineComment | BlockComment }
+
+@external tokens elseIfTokenizer from "./tokens" { elseIf }
+
+@precedence {
+  member @left,
+  call,
+  prefix @right,
+  power @right,
+  times @left,
+  plus @left,
+  compare @left,
+  and @left,
+  or @left
+}
+
+statement[@isGroup=Statement] {
+  IfStatement |
+  Assignment |
+  ExprStatement
+}
+
+IfStatement {
+  kw<"if"> expression kw<"then"> statement*
+  (elseIf expression kw<"then"> statement*)*
+  (kw<"else"> statement*)?
+  kw<"end">
+}
+
+Assignment {
+  VariableName AssignOp expression |
+  PropertyAccess AssignOp expression
+}
+
+ExprStatement {
+  expression
+}
+
+expression[@isGroup=Expression] {
+  VariableName |
+  Number |
+  String |
+  BooleanLiteral |
+  ParenExpression |
+  UnaryExpression |
+  BinaryExpression |
+  MethodCall |
+  PropertyAccess |
+  FunctionCall
+}
+
+ParenExpression { "(" expression ")" }
+
+UnaryExpression {
+  !prefix ("-" | "!") expression
+}
+
+BinaryExpression {
+  expression !or "||" expression |
+  expression !and "&&" expression |
+  expression !compare CompareOp expression |
+  expression !compare kw<"in"> expression |
+  expression !plus ("+" | !prefix "-") expression |
+  expression !times ("*" | "/" | "%") expression |
+  expression !power Power expression
+}
+
+MethodCall {
+  expression !member "." PropertyName ArgList
+}
+
+PropertyAccess {
+  expression !member "." PropertyName
+}
+
+FunctionCall {
+  VariableName !call ArgList
+}
+
+ArgList { "(" commaSep<expression>? ")" }
+
+commaSep<expr> { expr ("," expr)* }
+
+PropertyName { identifier }
+
+VariableName { identifier }
+
+kw<term> { @extend[@name={term}]<identifier, term> }
+
+BooleanLiteral { @extend[@name=BooleanLiteral]<identifier, "true" | "false"> }
+
+@tokens {
+  space { $[ \t\n\r]+ }
+
+  LineComment { "//" ![\n]* }
+  BlockComment { "/*" blockCommentRest }
+  blockCommentRest { ![*] blockCommentRest | "*" blockCommentAfterStar }
+  blockCommentAfterStar { "/" | ![/] blockCommentRest }
+
+  Number { @digit+ ("." @digit+)? }
+
+  String {
+    '"' (![\\\"\n] | "\\" _)* '"' |
+    "'" (![\\\'\n] | "\\" _)* "'"
+  }
+
+  identifier { $[a-zA-Z_] $[a-zA-Z0-9_]* }
+
+  AssignOp { "=" | "+=" | "-=" | "*=" | "/=" | "%=" }
+
+  CompareOp { "==" | "!=" | "<=" | ">=" | "<" | ">" }
+
+  Power { "**" }
+
+  "+" "-" "*" "/" "%" "!" "." "," "(" ")" "||" "&&"
+
+  @precedence { AssignOp, CompareOp }
+  @precedence { BlockComment, LineComment, "/" }
+  @precedence { Power, "*" }
+}
+
+@detectDelim

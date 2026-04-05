@@ -1,0 +1,43 @@
+{
+  "name": "codemirror-lang-dexpr",
+  "version": "0.1.0",
+  "description": "CodeMirror 6 language support for dexpr",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --external @codemirror/language --external @codemirror/autocomplete --external @codemirror/state --external @codemirror/view --external @lezer/highlight --external @lezer/lr",
+    "demo": "tsup demo.ts --format iife --outDir dist --no-dts",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch"
+  },
+  "peerDependencies": {
+    "@codemirror/autocomplete": "^6.0.0",
+    "@codemirror/language": "^6.0.0",
+    "@codemirror/state": "^6.0.0",
+    "@codemirror/view": "^6.0.0",
+    "@lezer/highlight": "^1.0.0",
+    "@lezer/lr": "^1.0.0"
+  },
+  "devDependencies": {
+    "@codemirror/autocomplete": "^6.0.0",
+    "@codemirror/language": "^6.0.0",
+    "@codemirror/state": "^6.0.0",
+    "@codemirror/view": "^6.0.0",
+    "@lezer/generator": "^1.8.0",
+    "@lezer/highlight": "^1.0.0",
+    "@lezer/lr": "^1.4.8",
+    "codemirror": "^6.0.2",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "license": "MIT"
+}

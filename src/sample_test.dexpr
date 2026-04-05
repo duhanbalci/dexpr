@@ -1,0 +1,28 @@
+a = 10.2
+b = a + 5.5
+c = 2.4
+
+b + c
+
+"Merhaba" + " duhan".upper()
+
+(3+3)*2/3
+
+t = 3+3
+t*2/3
+
+if true then
+	"true"
+else
+	"false"
+end
+
+aaa = false
+
+if false && true then
+	"11"
+else if 2 > 1 && 2 >= 2 && !aaa then
+	"22"
+else if true then
+	"33"
+end
