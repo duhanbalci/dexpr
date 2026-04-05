@@ -24,7 +24,7 @@
 //! let mut customer = IndexMap::new();
 //! customer.insert(SmolStr::new("name"), Value::String("Alice".into()));
 //! customer.insert(SmolStr::new("age"), Value::Number(dec!(30)));
-//! info.add_value("customer", &Value::Object(customer), None);
+//! info.add_value("customer", &Value::Object(Box::new(customer)), None);
 //! info.add_value("price", &Value::Number(dec!(100)), None);
 //!
 //! let json = info.to_json();

@@ -55,7 +55,7 @@ fn value_def_to_value(def: &ValueDef) -> Value {
                     };
                     map.insert(SmolStr::from(k.as_str()), val);
                 }
-                Value::Object(map)
+                Value::Object(Box::new(map))
             }
             let obj = def.value.as_ref().unwrap().as_object().unwrap();
             json_obj_to_value(obj)

@@ -11,9 +11,9 @@ pub enum Value {
   Number(Decimal),
   String(SmolStr),
   Boolean(bool),
-  NumberList(Vec<Decimal>),
-  StringList(Vec<SmolStr>),
-  Object(IndexMap<SmolStr, Value>),
+  NumberList(Box<Vec<Decimal>>),
+  StringList(Box<Vec<SmolStr>>),
+  Object(Box<IndexMap<SmolStr, Value>>),
 }
 
 /// Type tag constants for serialization
@@ -120,7 +120,7 @@ impl Value {
         bytes.push((list.len() >> 8) as u8);
         bytes.push(list.len() as u8);
         // List items
-        for n in list {
+        for n in list.iter() {
           bytes.extend_from_slice(&n.serialize());
         }
       }
@@ -129,7 +129,7 @@ impl Value {
         bytes.push((list.len() >> 8) as u8);
         bytes.push(list.len() as u8);
         // List items
-        for s in list {
+        for s in list.iter() {
           // String length (2 bytes)
           bytes.push((s.len() >> 8) as u8);
           bytes.push(s.len() as u8);
@@ -142,7 +142,7 @@ impl Value {
         bytes.push((map.len() >> 8) as u8);
         bytes.push(map.len() as u8);
         // Entries: key (string) + value (recursive)
-        for (key, val) in map {
+        for (key, val) in map.iter() {
           bytes.push((key.len() >> 8) as u8);
           bytes.push(key.len() as u8);
           bytes.extend_from_slice(key.as_bytes());
@@ -209,19 +209,19 @@ impl From<SmolStr> for Value {
 
 impl From<Vec<Decimal>> for Value {
   fn from(v: Vec<Decimal>) -> Self {
-    Value::NumberList(v)
+    Value::NumberList(Box::new(v))
   }
 }
 
 impl From<Vec<SmolStr>> for Value {
   fn from(v: Vec<SmolStr>) -> Self {
-    Value::StringList(v)
+    Value::StringList(Box::new(v))
   }
 }
 
 impl From<IndexMap<SmolStr, Value>> for Value {
   fn from(m: IndexMap<SmolStr, Value>) -> Self {
-    Value::Object(m)
+    Value::Object(Box::new(m))
   }
 }
 
@@ -292,7 +292,7 @@ impl Value {
           list.push(Decimal::deserialize(decimal_bytes));
         }
 
-        Ok((Value::NumberList(list), pos))
+        Ok((Value::NumberList(Box::new(list)), pos))
       }
       TYPE_STRING_LIST => {
         if bytes.len() < pos + 2 {
@@ -321,7 +321,7 @@ impl Value {
           list.push(s.into());
         }
 
-        Ok((Value::StringList(list), pos))
+        Ok((Value::StringList(Box::new(list)), pos))
       }
       TYPE_OBJECT => {
         if bytes.len() < pos + 2 {
@@ -354,7 +354,7 @@ impl Value {
           map.insert(key.into(), val);
         }
 
-        Ok((Value::Object(map), pos))
+        Ok((Value::Object(Box::new(map)), pos))
       }
       _ => Err(format!("Unknown type tag: {}", type_tag)),
     }
@@ -407,7 +407,7 @@ impl Value {
       serde_json::Value::String(s) => Ok(Value::String(SmolStr::new(s))),
       serde_json::Value::Array(arr) => {
         if arr.is_empty() {
-          return Ok(Value::StringList(Vec::new()));
+          return Ok(Value::StringList(Box::new(Vec::new())));
         }
         // Check if all elements are the same type
         let first = &arr[0];
@@ -418,12 +418,12 @@ impl Value {
               nums.push(n);
             }
           }
-          Ok(Value::NumberList(nums))
+          Ok(Value::NumberList(Box::new(nums)))
         } else if first.is_string() && arr.iter().all(|v| v.is_string()) {
           let strings: Vec<SmolStr> = arr.iter()
             .filter_map(|v| v.as_str().map(SmolStr::new))
             .collect();
-          Ok(Value::StringList(strings))
+          Ok(Value::StringList(Box::new(strings)))
         } else {
           Err("Arrays must contain all numbers or all strings".to_string())
         }
@@ -433,7 +433,7 @@ impl Value {
         for (k, v) in obj {
           map.insert(SmolStr::new(k), Self::from_json_value(v)?);
         }
-        Ok(Value::Object(map))
+        Ok(Value::Object(Box::new(map)))
       }
     }
   }

@@ -1,8 +1,8 @@
 use crate::{ast::value::Value, bytecode::BytecodeReader, opcodes::OpCodeByte};
-use bumpalo::Bump;
 use micromap::Map;
 use rust_decimal::{Decimal, MathematicalOps};
 use rustc_hash::FxHashMap;
+use smallvec::SmallVec;
 use smol_str::SmolStr;
 
 /// Type alias for external (host) functions
@@ -47,8 +47,6 @@ pub struct VM<'a> {
 
   pub(super) external_methods: Option<FxHashMap<(SmolStr, SmolStr), ExternalMethod>>,
 
-  heap: Bump,
-
   debug_info: Option<&'a DebugInfo>,
 
   #[cfg(debug_assertions)]
@@ -70,7 +68,6 @@ impl<'a> VM<'a> {
       last_result: Value::Null,
       external_functions: None,
       external_methods: None,
-      heap: Bump::new(),
       debug_info: None,
       #[cfg(debug_assertions)]
       debug: false,
@@ -144,7 +141,6 @@ impl<'a> VM<'a> {
     self.registers = [const { Value::Null }; MAX_REGISTERS];
     self.last_result = Value::Null;
     // Preserve globals
-    self.heap = Bump::new();
   }
 
   /// Execute the bytecode program and return the last expression result
@@ -402,12 +398,12 @@ impl<'a> VM<'a> {
   #[inline]
   fn handle_load_global(&mut self) -> Result<(), VMError> {
     let reg = self.read_register_checked()?;
-    let name = self.reader.read_string().map_err(VMError::BytecodeError)?;
+    let name = self.reader.read_str().map_err(VMError::BytecodeError)?;
 
     let value = self
       .globals
-      .get(&name)
-      .ok_or_else(|| VMError::UndefinedVariable(name.clone()))?;
+      .get(name)
+      .ok_or_else(|| VMError::UndefinedVariable(SmolStr::from(name)))?;
     self.registers[reg] = value.clone();
 
     log_debug!(self,
@@ -420,12 +416,12 @@ impl<'a> VM<'a> {
   /// Handle StoreGlobal opcode - store register to global variable
   #[inline]
   fn handle_store_global(&mut self) -> Result<(), VMError> {
-    let name = self.reader.read_string().map_err(VMError::BytecodeError)?;
+    let name = self.reader.read_str().map_err(VMError::BytecodeError)?;
     let reg = self.read_register_checked()?;
 
     self
       .globals
-      .insert(name.clone(), self.registers[reg].clone());
+      .insert(SmolStr::from(name), self.registers[reg].clone());
 
     log_debug!(self,
       "StoreGlobal global.{} = r{} ({})",
@@ -476,15 +472,23 @@ impl<'a> VM<'a> {
         self.registers[dest] = Value::Number(*a_num + *b_num);
       }
       (Value::String(a_str), Value::String(b_str)) => {
-        let result = format!("{}{}", a_str, b_str);
+        let mut result = String::with_capacity(a_str.len() + b_str.len());
+        result.push_str(a_str);
+        result.push_str(b_str);
         self.registers[dest] = Value::String(result.into());
       }
       (Value::String(a_str), other) => {
-        let result = format!("{}{}", a_str, value_to_string(other));
+        let b_cow = value_to_string(other);
+        let mut result = String::with_capacity(a_str.len() + b_cow.len());
+        result.push_str(a_str);
+        result.push_str(&b_cow);
         self.registers[dest] = Value::String(result.into());
       }
       (other, Value::String(b_str)) => {
-        let result = format!("{}{}", value_to_string(other), b_str);
+        let a_cow = value_to_string(other);
+        let mut result = String::with_capacity(a_cow.len() + b_str.len());
+        result.push_str(&a_cow);
+        result.push_str(b_str);
         self.registers[dest] = Value::String(result.into());
       }
       (a_val, b_val) => {
@@ -657,11 +661,11 @@ impl<'a> VM<'a> {
     let a = self.read_register_checked()?;
     let b = self.read_register_checked()?;
 
-    let result = format!(
-      "{}{}",
-      value_to_string(&self.registers[a]),
-      value_to_string(&self.registers[b])
-    );
+    let a_cow = value_to_string(&self.registers[a]);
+    let b_cow = value_to_string(&self.registers[b]);
+    let mut result = String::with_capacity(a_cow.len() + b_cow.len());
+    result.push_str(&a_cow);
+    result.push_str(&b_cow);
     self.registers[dest] = Value::String(result.into());
 
     log_debug!(self, "Concat r{} = r{} + r{}", dest, a, b);
@@ -672,11 +676,11 @@ impl<'a> VM<'a> {
   fn handle_get_property(&mut self) -> Result<(), VMError> {
     let dest = self.read_register_checked()?;
     let obj = self.read_register_checked()?;
-    let prop = self.reader.read_string().map_err(VMError::BytecodeError)?;
+    let prop = self.reader.read_str().map_err(VMError::BytecodeError)?;
 
     match &self.registers[obj] {
       Value::Object(map) => {
-        let value = map.get(&prop).cloned().unwrap_or(Value::Null);
+        let value = map.get(prop).cloned().unwrap_or(Value::Null);
         self.registers[dest] = value;
       }
       other => {
@@ -694,13 +698,13 @@ impl<'a> VM<'a> {
   /// Handle SetProperty opcode - set a field on an Object (in-place on register)
   fn handle_set_property(&mut self) -> Result<(), VMError> {
     let obj = self.read_register_checked()?;
-    let prop = self.reader.read_string().map_err(VMError::BytecodeError)?;
+    let prop = self.reader.read_str().map_err(VMError::BytecodeError)?;
     let val = self.read_register_checked()?;
 
     let value = self.registers[val].clone();
     match &mut self.registers[obj] {
       Value::Object(map) => {
-        map.insert(prop.clone(), value);
+        map.insert(SmolStr::from(prop), value);
       }
       other => {
         return Err(VMError::RuntimeError(format!(
@@ -718,21 +722,21 @@ impl<'a> VM<'a> {
   fn handle_method_call(&mut self) -> Result<(), VMError> {
     let dest = self.read_register_checked()?;
     let obj = self.read_register_checked()?;
-    let method = self.reader.read_string().map_err(VMError::BytecodeError)?;
+    let method = self.reader.read_str().map_err(VMError::BytecodeError)?;
 
     // Read argument registers
     let arg_count = self
       .reader
       .read_byte()
       .map_err(VMError::BytecodeError)? as usize;
-    let mut args = Vec::with_capacity(arg_count);
+    let mut args: SmallVec<[Value; 4]> = SmallVec::with_capacity(arg_count);
 
     for _ in 0..arg_count {
       let reg = self.read_register_checked()?;
       args.push(self.registers[reg].clone());
     }
 
-    self.dispatch_method(dest, obj, &method, &args)?;
+    self.dispatch_method(dest, obj, method, &args)?;
 
     log_debug!(self, "MethodCall r{} = r{}.{}(...)", dest, obj, method);
     Ok(())
@@ -748,7 +752,7 @@ impl<'a> VM<'a> {
     let fn_id = self.reader.read_byte().map_err(VMError::BytecodeError)?;
     let arg_count = self.reader.read_byte().map_err(VMError::BytecodeError)? as usize;
 
-    let mut arg_regs = Vec::with_capacity(arg_count);
+    let mut arg_regs: SmallVec<[usize; 4]> = SmallVec::with_capacity(arg_count);
     for _ in 0..arg_count {
       arg_regs.push(self.read_register_checked()?);
     }
@@ -762,20 +766,21 @@ impl<'a> VM<'a> {
   /// Handle CallExternal opcode - call host function by name
   fn handle_call_external(&mut self) -> Result<(), VMError> {
     let dest = self.read_register_checked()?;
-    let name = self.reader.read_string().map_err(VMError::BytecodeError)?;
+    let name = self.reader.read_str().map_err(VMError::BytecodeError)?;
     let arg_count = self.reader.read_byte().map_err(VMError::BytecodeError)? as usize;
 
-    let mut args = Vec::with_capacity(arg_count);
+    let mut args: SmallVec<[Value; 4]> = SmallVec::with_capacity(arg_count);
     for _ in 0..arg_count {
       let reg = self.read_register_checked()?;
       args.push(self.registers[reg].clone());
     }
 
+    let name_key = SmolStr::from(name);
     let func = self
       .external_functions
       .as_ref()
-      .and_then(|m| m.get(&name))
-      .ok_or_else(|| VMError::RuntimeError(format!("Undefined function: {}", name)))?;
+      .and_then(|m| m.get(&name_key))
+      .ok_or_else(|| VMError::RuntimeError(format!("Undefined function: {}", name_key)))?;
 
     let result = func(&args).map_err(VMError::RuntimeError)?;
     self.registers[dest] = result;

@@ -126,9 +126,9 @@ impl<'a> BytecodeReader<'a> {
     self.read_byte()
   }
 
-  /// Read a string
+  /// Read a string as a borrowed slice (zero-copy from bytecode)
   #[inline(always)]
-  pub fn read_string(&mut self) -> Result<SmolStr, String> {
+  pub fn read_str(&mut self) -> Result<&'a str, String> {
     let length = self.read_u16()? as usize;
 
     if self.position + length > self.bytecode.len() {
@@ -139,7 +139,13 @@ impl<'a> BytecodeReader<'a> {
       .map_err(|_| "Invalid UTF-8 string".to_string())?;
     self.position += length;
 
-    Ok(s.into())
+    Ok(s)
+  }
+
+  /// Read a string as SmolStr (allocating — use read_str when possible)
+  #[inline(always)]
+  pub fn read_string(&mut self) -> Result<SmolStr, String> {
+    self.read_str().map(SmolStr::from)
   }
 
   /// Read a value

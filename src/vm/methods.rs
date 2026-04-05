@@ -6,66 +6,63 @@ use super::error::VMError;
 use super::vm::VM;
 
 impl<'a> VM<'a> {
-  /// Dispatch a method call on a value
+  /// Dispatch a method call on a value.
+  ///
+  /// Uses `std::mem::take` to temporarily move the value out of the register,
+  /// avoiding clones when dispatching to type-specific handlers.
   pub(super) fn dispatch_method(
     &mut self,
     dest: usize,
     obj: usize,
-    method: &SmolStr,
+    method: &str,
     args: &[Value],
   ) -> Result<(), VMError> {
-    match &self.registers[obj] {
-      Value::String(_) => self.dispatch_string_method(dest, obj, method, args),
-      Value::StringList(_) => self.dispatch_string_list_method(dest, obj, method, args),
-      Value::NumberList(_) => self.dispatch_number_list_method(dest, obj, method, args),
-      Value::Object(_) => self.dispatch_object_method(dest, obj, method, args),
+    // Take the value out to avoid borrow conflicts (register read + write).
+    let obj_val = std::mem::take(&mut self.registers[obj]);
+
+    let result = match &obj_val {
+      Value::String(_) => self.dispatch_string_method_inner(&obj_val, method, args),
+      Value::StringList(_) => self.dispatch_string_list_method_inner(&obj_val, method, args),
+      Value::NumberList(_) => self.dispatch_number_list_method_inner(&obj_val, method, args),
+      Value::Object(_) => self.dispatch_object_method_inner(&obj_val, method, args),
       _ => {
         // Try external methods for any type
-        let obj_val = &self.registers[obj];
         let type_name: SmolStr = obj_val.type_name().into();
-        let key = (type_name.clone(), method.clone());
+        let key = (type_name, SmolStr::from(method));
         if let Some(ext_method) = self.external_methods.as_ref().and_then(|m| m.get(&key)) {
-          let result = ext_method(obj_val, args).map_err(VMError::RuntimeError)?;
-          self.registers[dest] = result;
-          Ok(())
+          ext_method(&obj_val, args).map_err(VMError::RuntimeError)
         } else {
           Err(VMError::MethodNotFound {
             type_name: obj_val.type_name(),
-            method: method.clone(),
+            method: SmolStr::from(method),
           })
         }
       }
-    }
+    };
+
+    // Put the object back, then set dest (if dest == obj, result overwrites it — that's fine).
+    self.registers[obj] = obj_val;
+    self.registers[dest] = result?;
+    Ok(())
   }
 
-  fn dispatch_string_method(
-    &mut self,
-    dest: usize,
-    obj: usize,
-    method: &SmolStr,
+  fn dispatch_string_method_inner(
+    &self,
+    obj_val: &Value,
+    method: &str,
     args: &[Value],
-  ) -> Result<(), VMError> {
-    let s = match &self.registers[obj] {
-      Value::String(s) => s.clone(),
+  ) -> Result<Value, VMError> {
+    let s = match obj_val {
+      Value::String(s) => s,
       _ => unreachable!(),
     };
 
-    match method.as_str() {
-      "upper" => {
-        self.registers[dest] = Value::String(s.to_uppercase_smolstr());
-      }
-      "lower" => {
-        self.registers[dest] = Value::String(s.to_lowercase_smolstr());
-      }
-      "trim" => {
-        self.registers[dest] = Value::String(SmolStr::new(s.trim()));
-      }
-      "trimStart" => {
-        self.registers[dest] = Value::String(SmolStr::new(s.trim_start()));
-      }
-      "trimEnd" => {
-        self.registers[dest] = Value::String(SmolStr::new(s.trim_end()));
-      }
+    match method {
+      "upper" => Ok(Value::String(s.to_uppercase_smolstr())),
+      "lower" => Ok(Value::String(s.to_lowercase_smolstr())),
+      "trim" => Ok(Value::String(SmolStr::new(s.trim()))),
+      "trimStart" => Ok(Value::String(SmolStr::new(s.trim_start()))),
+      "trimEnd" => Ok(Value::String(SmolStr::new(s.trim_end()))),
       "split" => {
         if args.is_empty() {
           return Err(VMError::RuntimeError(
@@ -75,13 +72,11 @@ impl<'a> VM<'a> {
         match &args[0] {
           Value::String(delim) => {
             let parts: Vec<SmolStr> = s.split(delim.as_str()).map(SmolStr::new).collect();
-            self.registers[dest] = Value::StringList(parts);
+            Ok(Value::StringList(Box::new(parts)))
           }
-          _ => {
-            return Err(VMError::RuntimeError(
-              "split() requires a string delimiter".to_string(),
-            ));
-          }
+          _ => Err(VMError::RuntimeError(
+            "split() requires a string delimiter".to_string(),
+          )),
         }
       }
       "replace" => {
@@ -92,14 +87,11 @@ impl<'a> VM<'a> {
         }
         match (&args[0], &args[1]) {
           (Value::String(old), Value::String(new)) => {
-            let result = SmolStr::new(s.replace(old.as_str(), new.as_str()));
-            self.registers[dest] = Value::String(result);
+            Ok(Value::String(SmolStr::new(s.replace(old.as_str(), new.as_str()))))
           }
-          _ => {
-            return Err(VMError::RuntimeError(
-              "replace() requires string arguments".to_string(),
-            ));
-          }
+          _ => Err(VMError::RuntimeError(
+            "replace() requires string arguments".to_string(),
+          )),
         }
       }
       "startsWith" => {
@@ -109,14 +101,10 @@ impl<'a> VM<'a> {
           ));
         }
         match &args[0] {
-          Value::String(prefix) => {
-            self.registers[dest] = Value::Boolean(s.starts_with(prefix.as_str()));
-          }
-          _ => {
-            return Err(VMError::RuntimeError(
-              "startsWith() requires a string prefix".to_string(),
-            ));
-          }
+          Value::String(prefix) => Ok(Value::Boolean(s.starts_with(prefix.as_str()))),
+          _ => Err(VMError::RuntimeError(
+            "startsWith() requires a string prefix".to_string(),
+          )),
         }
       }
       "endsWith" => {
@@ -126,14 +114,10 @@ impl<'a> VM<'a> {
           ));
         }
         match &args[0] {
-          Value::String(suffix) => {
-            self.registers[dest] = Value::Boolean(s.ends_with(suffix.as_str()));
-          }
-          _ => {
-            return Err(VMError::RuntimeError(
-              "endsWith() requires a string suffix".to_string(),
-            ));
-          }
+          Value::String(suffix) => Ok(Value::Boolean(s.ends_with(suffix.as_str()))),
+          _ => Err(VMError::RuntimeError(
+            "endsWith() requires a string suffix".to_string(),
+          )),
         }
       }
       "contains" => {
@@ -143,19 +127,13 @@ impl<'a> VM<'a> {
           ));
         }
         match &args[0] {
-          Value::String(substr) => {
-            self.registers[dest] = Value::Boolean(s.contains(substr.as_str()));
-          }
-          _ => {
-            return Err(VMError::RuntimeError(
-              "contains() requires a string substring".to_string(),
-            ));
-          }
+          Value::String(substr) => Ok(Value::Boolean(s.contains(substr.as_str()))),
+          _ => Err(VMError::RuntimeError(
+            "contains() requires a string substring".to_string(),
+          )),
         }
       }
-      "length" => {
-        self.registers[dest] = Value::Number(Decimal::from(s.len()));
-      }
+      "length" => Ok(Value::Number(Decimal::from(s.len()))),
       "charAt" => {
         if args.is_empty() {
           return Err(VMError::RuntimeError(
@@ -166,19 +144,13 @@ impl<'a> VM<'a> {
           Value::Number(idx) => {
             let index = idx.to_u64().unwrap_or(u64::MAX) as usize;
             match s.chars().nth(index) {
-              Some(c) => {
-                self.registers[dest] = Value::String(SmolStr::new(c.to_string()));
-              }
-              None => {
-                self.registers[dest] = Value::Null;
-              }
+              Some(c) => Ok(Value::String(SmolStr::new(c.to_string()))),
+              None => Ok(Value::Null),
             }
           }
-          _ => {
-            return Err(VMError::RuntimeError(
-              "charAt() requires a number index".to_string(),
-            ));
-          }
+          _ => Err(VMError::RuntimeError(
+            "charAt() requires a number index".to_string(),
+          )),
         }
       }
       "substring" => {
@@ -201,68 +173,48 @@ impl<'a> VM<'a> {
             };
 
             if start >= chars.len() || start >= end {
-              self.registers[dest] = Value::String(SmolStr::new(""));
+              Ok(Value::String(SmolStr::new("")))
             } else {
               let end = end.min(chars.len());
               let result: String = chars[start..end].iter().collect();
-              self.registers[dest] = Value::String(SmolStr::new(result));
+              Ok(Value::String(SmolStr::new(result)))
             }
           }
-          _ => {
-            return Err(VMError::RuntimeError(
-              "substring() requires a number start index".to_string(),
-            ));
-          }
+          _ => Err(VMError::RuntimeError(
+            "substring() requires a number start index".to_string(),
+          )),
         }
       }
       _ => {
-        let key = (SmolStr::new_static("String"), method.clone());
+        let key = (SmolStr::new_static("String"), SmolStr::from(method));
         if let Some(ext_method) = self.external_methods.as_ref().and_then(|m| m.get(&key)) {
-          let obj_val = &self.registers[obj];
-          let result = ext_method(obj_val, args).map_err(VMError::RuntimeError)?;
-          self.registers[dest] = result;
+          ext_method(obj_val, args).map_err(VMError::RuntimeError)
         } else {
-          return Err(VMError::MethodNotFound {
+          Err(VMError::MethodNotFound {
             type_name: "String",
-            method: method.clone(),
-          });
+            method: SmolStr::from(method),
+          })
         }
       }
     }
-    Ok(())
   }
 
-  fn dispatch_string_list_method(
-    &mut self,
-    dest: usize,
-    obj: usize,
-    method: &SmolStr,
+  fn dispatch_string_list_method_inner(
+    &self,
+    obj_val: &Value,
+    method: &str,
     args: &[Value],
-  ) -> Result<(), VMError> {
-    let list = match &self.registers[obj] {
-      Value::StringList(l) => l.clone(),
+  ) -> Result<Value, VMError> {
+    let list = match obj_val {
+      Value::StringList(l) => l,
       _ => unreachable!(),
     };
 
-    match method.as_str() {
-      "length" | "len" => {
-        self.registers[dest] = Value::Number(Decimal::from(list.len()));
-      }
-      "isEmpty" => {
-        self.registers[dest] = Value::Boolean(list.is_empty());
-      }
-      "first" => {
-        self.registers[dest] = list
-          .first()
-          .map(|s| Value::String(s.clone()))
-          .unwrap_or(Value::Null);
-      }
-      "last" => {
-        self.registers[dest] = list
-          .last()
-          .map(|s| Value::String(s.clone()))
-          .unwrap_or(Value::Null);
-      }
+    match method {
+      "length" | "len" => Ok(Value::Number(Decimal::from(list.len()))),
+      "isEmpty" => Ok(Value::Boolean(list.is_empty())),
+      "first" => Ok(list.first().map(|s| Value::String(s.clone())).unwrap_or(Value::Null)),
+      "last" => Ok(list.last().map(|s| Value::String(s.clone())).unwrap_or(Value::Null)),
       "get" => {
         if args.is_empty() {
           return Err(VMError::RuntimeError("get() requires an index".to_string()));
@@ -270,12 +222,9 @@ impl<'a> VM<'a> {
         match &args[0] {
           Value::Number(idx) => {
             let index = idx.to_usize().unwrap_or(usize::MAX);
-            self.registers[dest] = list
-              .get(index)
-              .map(|s| Value::String(s.clone()))
-              .unwrap_or(Value::Null);
+            Ok(list.get(index).map(|s| Value::String(s.clone())).unwrap_or(Value::Null))
           }
-          _ => return Err(VMError::RuntimeError("get() requires a number index".to_string())),
+          _ => Err(VMError::RuntimeError("get() requires a number index".to_string())),
         }
       }
       "contains" => {
@@ -283,10 +232,8 @@ impl<'a> VM<'a> {
           return Err(VMError::RuntimeError("contains() requires an argument".to_string()));
         }
         match &args[0] {
-          Value::String(s) => {
-            self.registers[dest] = Value::Boolean(list.contains(s));
-          }
-          _ => return Err(VMError::RuntimeError("contains() requires a string argument".to_string())),
+          Value::String(s) => Ok(Value::Boolean(list.contains(s))),
+          _ => Err(VMError::RuntimeError("contains() requires a string argument".to_string())),
         }
       }
       "indexOf" => {
@@ -296,11 +243,9 @@ impl<'a> VM<'a> {
         match &args[0] {
           Value::String(s) => {
             let idx = list.iter().position(|item| item == s);
-            self.registers[dest] = idx
-              .map(|i| Value::Number(Decimal::from(i)))
-              .unwrap_or(Value::Number(Decimal::from(-1)));
+            Ok(idx.map(|i| Value::Number(Decimal::from(i))).unwrap_or(Value::Number(Decimal::from(-1))))
           }
-          _ => return Err(VMError::RuntimeError("indexOf() requires a string argument".to_string())),
+          _ => Err(VMError::RuntimeError("indexOf() requires a string argument".to_string())),
         }
       }
       "slice" => {
@@ -318,20 +263,20 @@ impl<'a> VM<'a> {
             } else {
               list.len()
             };
-            self.registers[dest] = Value::StringList(list[start..end].to_vec());
+            Ok(Value::StringList(Box::new(list[start..end].to_vec())))
           }
-          _ => return Err(VMError::RuntimeError("slice() requires a number index".to_string())),
+          _ => Err(VMError::RuntimeError("slice() requires a number index".to_string())),
         }
       }
       "reverse" => {
-        let mut reversed = list;
+        let mut reversed = list.to_vec();
         reversed.reverse();
-        self.registers[dest] = Value::StringList(reversed);
+        Ok(Value::StringList(Box::new(reversed)))
       }
       "sort" => {
-        let mut sorted = list;
+        let mut sorted = list.to_vec();
         sorted.sort();
-        self.registers[dest] = Value::StringList(sorted);
+        Ok(Value::StringList(Box::new(sorted)))
       }
       "join" => {
         let delim = if args.is_empty() {
@@ -343,56 +288,38 @@ impl<'a> VM<'a> {
           }
         };
         let result: String = list.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(delim);
-        self.registers[dest] = Value::String(SmolStr::new(result));
+        Ok(Value::String(SmolStr::new(result)))
       }
       _ => {
-        let key = (SmolStr::new_static("StringList"), method.clone());
+        let key = (SmolStr::new_static("StringList"), SmolStr::from(method));
         if let Some(ext_method) = self.external_methods.as_ref().and_then(|m| m.get(&key)) {
-          let obj_val = &self.registers[obj];
-          let result = ext_method(obj_val, args).map_err(VMError::RuntimeError)?;
-          self.registers[dest] = result;
+          ext_method(obj_val, args).map_err(VMError::RuntimeError)
         } else {
-          return Err(VMError::MethodNotFound {
+          Err(VMError::MethodNotFound {
             type_name: "StringList",
-            method: method.clone(),
-          });
+            method: SmolStr::from(method),
+          })
         }
       }
     }
-    Ok(())
   }
 
-  fn dispatch_number_list_method(
-    &mut self,
-    dest: usize,
-    obj: usize,
-    method: &SmolStr,
+  fn dispatch_number_list_method_inner(
+    &self,
+    obj_val: &Value,
+    method: &str,
     args: &[Value],
-  ) -> Result<(), VMError> {
-    let list = match &self.registers[obj] {
-      Value::NumberList(l) => l.clone(),
+  ) -> Result<Value, VMError> {
+    let list = match obj_val {
+      Value::NumberList(l) => l,
       _ => unreachable!(),
     };
 
-    match method.as_str() {
-      "length" | "len" => {
-        self.registers[dest] = Value::Number(Decimal::from(list.len()));
-      }
-      "isEmpty" => {
-        self.registers[dest] = Value::Boolean(list.is_empty());
-      }
-      "first" => {
-        self.registers[dest] = list
-          .first()
-          .map(|n| Value::Number(*n))
-          .unwrap_or(Value::Null);
-      }
-      "last" => {
-        self.registers[dest] = list
-          .last()
-          .map(|n| Value::Number(*n))
-          .unwrap_or(Value::Null);
-      }
+    match method {
+      "length" | "len" => Ok(Value::Number(Decimal::from(list.len()))),
+      "isEmpty" => Ok(Value::Boolean(list.is_empty())),
+      "first" => Ok(list.first().map(|n| Value::Number(*n)).unwrap_or(Value::Null)),
+      "last" => Ok(list.last().map(|n| Value::Number(*n)).unwrap_or(Value::Null)),
       "get" => {
         if args.is_empty() {
           return Err(VMError::RuntimeError("get() requires an index".to_string()));
@@ -400,12 +327,9 @@ impl<'a> VM<'a> {
         match &args[0] {
           Value::Number(idx) => {
             let index = idx.to_usize().unwrap_or(usize::MAX);
-            self.registers[dest] = list
-              .get(index)
-              .map(|n| Value::Number(*n))
-              .unwrap_or(Value::Null);
+            Ok(list.get(index).map(|n| Value::Number(*n)).unwrap_or(Value::Null))
           }
-          _ => return Err(VMError::RuntimeError("get() requires a number index".to_string())),
+          _ => Err(VMError::RuntimeError("get() requires a number index".to_string())),
         }
       }
       "contains" => {
@@ -413,10 +337,8 @@ impl<'a> VM<'a> {
           return Err(VMError::RuntimeError("contains() requires an argument".to_string()));
         }
         match &args[0] {
-          Value::Number(n) => {
-            self.registers[dest] = Value::Boolean(list.contains(n));
-          }
-          _ => return Err(VMError::RuntimeError("contains() requires a number argument".to_string())),
+          Value::Number(n) => Ok(Value::Boolean(list.contains(n))),
+          _ => Err(VMError::RuntimeError("contains() requires a number argument".to_string())),
         }
       }
       "indexOf" => {
@@ -426,11 +348,9 @@ impl<'a> VM<'a> {
         match &args[0] {
           Value::Number(n) => {
             let idx = list.iter().position(|item| item == n);
-            self.registers[dest] = idx
-              .map(|i| Value::Number(Decimal::from(i)))
-              .unwrap_or(Value::Number(Decimal::from(-1)));
+            Ok(idx.map(|i| Value::Number(Decimal::from(i))).unwrap_or(Value::Number(Decimal::from(-1))))
           }
-          _ => return Err(VMError::RuntimeError("indexOf() requires a number argument".to_string())),
+          _ => Err(VMError::RuntimeError("indexOf() requires a number argument".to_string())),
         }
       }
       "slice" => {
@@ -448,86 +368,70 @@ impl<'a> VM<'a> {
             } else {
               list.len()
             };
-            self.registers[dest] = Value::NumberList(list[start..end].to_vec());
+            Ok(Value::NumberList(Box::new(list[start..end].to_vec())))
           }
-          _ => return Err(VMError::RuntimeError("slice() requires a number index".to_string())),
+          _ => Err(VMError::RuntimeError("slice() requires a number index".to_string())),
         }
       }
       "reverse" => {
-        let mut reversed = list;
+        let mut reversed = list.to_vec();
         reversed.reverse();
-        self.registers[dest] = Value::NumberList(reversed);
+        Ok(Value::NumberList(Box::new(reversed)))
       }
       "sort" => {
-        let mut sorted = list;
+        let mut sorted = list.to_vec();
         sorted.sort();
-        self.registers[dest] = Value::NumberList(sorted);
+        Ok(Value::NumberList(Box::new(sorted)))
       }
       "sum" => {
         let sum: Decimal = list.iter().sum();
-        self.registers[dest] = Value::Number(sum);
+        Ok(Value::Number(sum))
       }
       "avg" => {
         if list.is_empty() {
-          self.registers[dest] = Value::Null;
+          Ok(Value::Null)
         } else {
           let sum: Decimal = list.iter().sum();
           let avg = sum / Decimal::from(list.len());
-          self.registers[dest] = Value::Number(avg);
+          Ok(Value::Number(avg))
         }
       }
-      "min" => {
-        self.registers[dest] = list
-          .iter()
-          .min()
-          .map(|n| Value::Number(*n))
-          .unwrap_or(Value::Null);
-      }
-      "max" => {
-        self.registers[dest] = list
-          .iter()
-          .max()
-          .map(|n| Value::Number(*n))
-          .unwrap_or(Value::Null);
-      }
+      "min" => Ok(list.iter().min().map(|n| Value::Number(*n)).unwrap_or(Value::Null)),
+      "max" => Ok(list.iter().max().map(|n| Value::Number(*n)).unwrap_or(Value::Null)),
       _ => {
-        let key = (SmolStr::new_static("NumberList"), method.clone());
+        let key = (SmolStr::new_static("NumberList"), SmolStr::from(method));
         if let Some(ext_method) = self.external_methods.as_ref().and_then(|m| m.get(&key)) {
-          let obj_val = &self.registers[obj];
-          let result = ext_method(obj_val, args).map_err(VMError::RuntimeError)?;
-          self.registers[dest] = result;
+          ext_method(obj_val, args).map_err(VMError::RuntimeError)
         } else {
-          return Err(VMError::MethodNotFound {
+          Err(VMError::MethodNotFound {
             type_name: "NumberList",
-            method: method.clone(),
-          });
+            method: SmolStr::from(method),
+          })
         }
       }
     }
-    Ok(())
   }
 
-  fn dispatch_object_method(
-    &mut self,
-    dest: usize,
-    obj: usize,
-    method: &SmolStr,
+  fn dispatch_object_method_inner(
+    &self,
+    obj_val: &Value,
+    method: &str,
     args: &[Value],
-  ) -> Result<(), VMError> {
-    let map = match &self.registers[obj] {
-      Value::Object(m) => m.clone(),
+  ) -> Result<Value, VMError> {
+    let map = match obj_val {
+      Value::Object(m) => m,
       _ => unreachable!(),
     };
 
-    match method.as_str() {
+    match method {
       "keys" => {
         let keys: Vec<SmolStr> = map.keys().cloned().collect();
-        self.registers[dest] = Value::StringList(keys);
+        Ok(Value::StringList(Box::new(keys)))
       }
       "values" => {
         let vals: Vec<Value> = map.values().cloned().collect();
         if vals.is_empty() {
-          self.registers[dest] = Value::StringList(Vec::new());
+          Ok(Value::StringList(Box::new(Vec::new())))
         } else if vals.iter().all(|v| matches!(v, Value::String(_))) {
           let strings: Vec<SmolStr> = vals
             .into_iter()
@@ -536,7 +440,7 @@ impl<'a> VM<'a> {
               _ => unreachable!(),
             })
             .collect();
-          self.registers[dest] = Value::StringList(strings);
+          Ok(Value::StringList(Box::new(strings)))
         } else if vals.iter().all(|v| matches!(v, Value::Number(_))) {
           let numbers: Vec<Decimal> = vals
             .into_iter()
@@ -545,16 +449,14 @@ impl<'a> VM<'a> {
               _ => unreachable!(),
             })
             .collect();
-          self.registers[dest] = Value::NumberList(numbers);
+          Ok(Value::NumberList(Box::new(numbers)))
         } else {
-          return Err(VMError::RuntimeError(
+          Err(VMError::RuntimeError(
             "values() only works when all values are the same type (String or Number)".to_string(),
-          ));
+          ))
         }
       }
-      "length" | "len" => {
-        self.registers[dest] = Value::Number(Decimal::from(map.len()));
-      }
+      "length" | "len" => Ok(Value::Number(Decimal::from(map.len()))),
       "contains" => {
         if args.is_empty() {
           return Err(VMError::RuntimeError(
@@ -562,14 +464,10 @@ impl<'a> VM<'a> {
           ));
         }
         match &args[0] {
-          Value::String(key) => {
-            self.registers[dest] = Value::Boolean(map.contains_key(key));
-          }
-          _ => {
-            return Err(VMError::RuntimeError(
-              "contains() requires a string key".to_string(),
-            ))
-          }
+          Value::String(key) => Ok(Value::Boolean(map.contains_key(key))),
+          _ => Err(VMError::RuntimeError(
+            "contains() requires a string key".to_string(),
+          )),
         }
       }
       "get" => {
@@ -579,30 +477,23 @@ impl<'a> VM<'a> {
           ));
         }
         match &args[0] {
-          Value::String(key) => {
-            self.registers[dest] = map.get(key).cloned().unwrap_or(Value::Null);
-          }
-          _ => {
-            return Err(VMError::RuntimeError(
-              "get() requires a string key".to_string(),
-            ))
-          }
+          Value::String(key) => Ok(map.get(key).cloned().unwrap_or(Value::Null)),
+          _ => Err(VMError::RuntimeError(
+            "get() requires a string key".to_string(),
+          )),
         }
       }
       _ => {
-        let key = (SmolStr::new_static("Object"), method.clone());
+        let key = (SmolStr::new_static("Object"), SmolStr::from(method));
         if let Some(ext_method) = self.external_methods.as_ref().and_then(|m| m.get(&key)) {
-          let obj_val = &self.registers[obj];
-          let result = ext_method(obj_val, args).map_err(VMError::RuntimeError)?;
-          self.registers[dest] = result;
+          ext_method(obj_val, args).map_err(VMError::RuntimeError)
         } else {
-          return Err(VMError::MethodNotFound {
+          Err(VMError::MethodNotFound {
             type_name: "Object",
-            method: method.clone(),
-          });
+            method: SmolStr::from(method),
+          })
         }
       }
     }
-    Ok(())
   }
 }
