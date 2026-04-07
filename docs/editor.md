@@ -155,7 +155,9 @@ Bu analiz her autocomplete tetiklendiğinde Lezer tree üzerinde yapılır. Bozu
 | `x.` (assignment'tan `String` çıkarıldı) | String metodları |
 | `items.` (config'de `StringList`) | StringList metodları |
 | `scores.` (config'de `NumberList`) | NumberList metodları |
-| `obj.` (config'de `Object`) | Object metodları |
+| `obj.` (config'de `Object`) | Object field'ları + Object metodları |
+| `kalemler.` (config'de `List`) | Element field'ları (property projection) + List metodları |
+| `kalemler.tutar.` (List projection → `NumberList`) | NumberList metodları (sum, avg, min, max...) |
 | `result.` (tip bilinmiyor) | Tüm metodlar |
 | `42.` | Öneri yok |
 
@@ -260,7 +262,7 @@ Eğer host uygulama çalışma sırasında yeni fonksiyon/değişken eklerse, ed
 | Tip | Açıklama |
 |-----|----------|
 | `DexprLanguageInfo` | Metadata arayüzü (JSON yapısı) |
-| `DexprType` | `"String" \| "Number" \| "Boolean" \| "NumberList" \| "StringList" \| "Object"` |
+| `DexprType` | `"String" \| "Number" \| "Boolean" \| "NumberList" \| "StringList" \| "Object" \| "List"` |
 | `FunctionInfo` | Fonksiyon metadata'sı |
 | `MethodInfo` | Metod metadata'sı |
 | `VariableInfo` | Değişken metadata'sı |

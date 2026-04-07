@@ -72,6 +72,7 @@ The dexpr language supports:
 - Line comments (`//`) and block comments (`/* */`)
 - Lists: `NumberList` and `StringList` types with methods (`sum`, `avg`, `min`, `max`, `first`, `last`, `get`, `join`, `contains`, `indexOf`, `slice`, `reverse`, `sort`, `isEmpty`, etc.)
 - Objects: `Object` type (provided externally via `set_global`) with property access (`obj.field`), nested access (`obj.a.b`), property assignment (`obj.field = value`), and methods (`keys()`, `values()`, `length()`, `contains(key)`, `get(key)`)
+- Lists: `List` type for heterogeneous arrays (including array of objects), with methods (`length`, `isEmpty`, `first`, `last`, `get`, `contains`, `indexOf`, `slice`, `reverse`, `join`, `map(field)`, `filter(field, value?)`, `find(field, value?)`, `sort(field)`). Property projection: `kalemler.tutar` extracts field from each Object element, returning NumberList/StringList/List. `map("field")` also available as explicit alternative
 
 ## Detailed Module Documentation
 

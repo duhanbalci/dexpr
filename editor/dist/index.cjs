@@ -285,6 +285,15 @@ function inferMethodReturnType(method) {
     // depends on input type
     case "join":
       return "String";
+    // List methods
+    case "map":
+      return null;
+    // depends on field type (NumberList, StringList, or List)
+    case "filter":
+      return "List";
+    case "find":
+      return null;
+    // returns single element
     default:
       return null;
   }
@@ -318,7 +327,7 @@ function dexprCompletion(info) {
   }
   const objectFieldCompletions = /* @__PURE__ */ new Map();
   for (const v of info.variables ?? []) {
-    if (v.type === "Object" && v.fields) {
+    if ((v.type === "Object" || v.type === "List") && v.fields) {
       const fieldItems = [];
       for (const f of v.fields) {
         configVarTypes.set(`${v.name}.${f.name}`, f.type);
@@ -392,6 +401,10 @@ function dexprCompletion(info) {
         const fieldItems = objectFieldCompletions.get(rootVarName) ?? [];
         const objMethods = methodsByType["Object"] ?? [];
         options = [...fieldItems, ...objMethods];
+      } else if (finalType === "List") {
+        const rootVarName = path[0];
+        const listMethods = methodsByType["List"] ?? [];
+        options = [...listMethods];
       } else if (finalType) {
         options = methodsByType[finalType] ?? allMethods;
       } else {

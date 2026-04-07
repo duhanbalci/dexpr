@@ -137,17 +137,18 @@ struct VM<'a> {
 
 ### String, Nesne ve Metodlar
 - **`handle_concat()`** — İki register'ı birleştir (karışık tip dönüşümü destekler: String, Number, Boolean otomatik olarak String'e dönüştürülür)
-- **`handle_get_property()`** — Object register'ından alan oku, alan yoksa `Null` döndür
+- **`handle_get_property()`** — Object register'ından alan oku, alan yoksa `Null` döndür. List register'ında property projection yapar: her Object elemanından ilgili alanı çıkarıp NumberList/StringList/List döndürür
 - **`handle_set_property()`** — Object register'ında alan değerini ayarla
 - **`handle_method_call()`** — Nesne register'ı, metod adı, argümanlar
   - **String metodları:** `upper`, `lower`, `trim`, `trimStart`, `trimEnd`, `split(delimiter)`, `replace(old, new)`, `startsWith(prefix)`, `endsWith(suffix)`, `contains(substr)`, `length`, `charAt(index)`, `substring(start, end?)`
   - **StringList metodları:** `length`/`len`, `isEmpty`, `first`, `last`, `get(index)`, `contains(value)`, `indexOf(value)`, `slice(start, end?)`, `reverse()`, `sort()`, `join(delimiter?)`
   - **NumberList metodları:** `length`/`len`, `isEmpty`, `first`, `last`, `get(index)`, `contains(value)`, `indexOf(value)`, `slice(start, end?)`, `reverse()`, `sort()`, `sum`, `avg`, `min`, `max`
   - **Object metodları:** `keys()`, `values()`, `length`/`len()`, `contains(key)`, `get(key)`
+  - **List metodları:** `length`/`len`, `isEmpty`, `first`, `last`, `get(index)`, `contains(value)`, `indexOf(value)`, `slice(start, end?)`, `reverse()`, `join(delim?)`, `map(field)`, `filter(field, value?)`, `find(field, value?)`, `sort(field)`
   - **Harici metodlar:** Yukarıdaki built-in metodlar bulunamazsa `external_methods` HashMap'inde aranır
 
 ### Üyelik Testi
-- **`handle_contains()`** — `in` operatörü: String in StringList, Number in NumberList, String in String (substring), String in Object (anahtar varlığı kontrolü)
+- **`handle_contains()`** — `in` operatörü: String in StringList, Number in NumberList, String in String (substring), String in Object (anahtar varlığı kontrolü), Value in List
 
 ### Harici Fonksiyonlar ve Sonuç
 - **`handle_call_external()`** — İsimle harici fonksiyon çağır (HashMap lookup)
@@ -203,7 +204,7 @@ vm.register_method("Number", "format", |this, args| {
 });
 ```
 
-**Tip isimleri:** `"Number"`, `"String"`, `"Boolean"`, `"NumberList"`, `"StringList"`, `"Object"`, `"Null"`
+**Tip isimleri:** `"Number"`, `"String"`, `"Boolean"`, `"NumberList"`, `"StringList"`, `"Object"`, `"List"`, `"Null"`
 
 ---
 

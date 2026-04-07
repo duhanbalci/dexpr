@@ -2,7 +2,7 @@ import { Extension } from '@codemirror/state';
 import { Completion } from '@codemirror/autocomplete';
 import { LRLanguage, HighlightStyle } from '@codemirror/language';
 
-type DexprType = "String" | "Number" | "Boolean" | "NumberList" | "StringList" | "Object";
+type DexprType = "String" | "Number" | "Boolean" | "NumberList" | "StringList" | "Object" | "List";
 interface FunctionInfo {
     name: string;
     signature: string;

@@ -17,7 +17,8 @@ export type DexprType =
   | "Boolean"
   | "NumberList"
   | "StringList"
-  | "Object";
+  | "Object"
+  | "List";
 
 export interface FunctionInfo {
   name: string;
@@ -171,14 +172,14 @@ function inferExprType(
       if (objNode.name === "VariableName") {
         const varName = doc.sliceString(objNode.from, objNode.to);
         const fieldName = doc.sliceString(propNode.from, propNode.to);
-        // Look up from objectFieldTypes via the global lookup
-        // (We use knownTypes to check if root is Object, then check field)
         const rootType = knownTypes.get(varName);
         if (rootType === "Object") {
-          // Field type needs to come from config — stored as "varName.fieldName" key
-          // We can't access objectFieldTypes here, so use the convention
-          // that knownTypes may contain "varName.fieldName" entries
           return knownTypes.get(`${varName}.${fieldName}`) ?? null;
+        }
+        if (rootType === "List") {
+          // Property projection: list.field → typed list based on field type
+          const fieldType = knownTypes.get(`${varName}.${fieldName}`) ?? null;
+          return projectedListType(fieldType);
         }
       }
       return null;
@@ -204,7 +205,7 @@ function findChild(
 }
 
 /** Infer return type from known method names */
-function inferMethodReturnType(method: string): DexprType | null {
+export function inferMethodReturnType(method: string): DexprType | null {
   switch (method) {
     // String -> String
     case "upper":
@@ -245,9 +246,27 @@ function inferMethodReturnType(method: string): DexprType | null {
       return null; // depends on input type
     case "join":
       return "String";
+    // List methods
+    case "map":
+      return null; // depends on field type (NumberList, StringList, or List)
+    case "filter":
+      return "List";
+    case "find":
+      return null; // returns single element
     default:
       return null;
   }
+}
+
+/**
+ * Given a field type from an Object element within a List,
+ * return the projected list type after property access.
+ * e.g. List with Number field "tutar" → kalemler.tutar → NumberList
+ */
+export function projectedListType(fieldType: DexprType | null): DexprType {
+  if (fieldType === "Number") return "NumberList";
+  if (fieldType === "String") return "StringList";
+  return "List";
 }
 
 // --- Autocomplete ---
@@ -290,7 +309,7 @@ export function dexprCompletion(info: DexprLanguageInfo): Extension {
   // and field completions per Object variable
   const objectFieldCompletions = new Map<string, Completion[]>();
   for (const v of info.variables ?? []) {
-    if (v.type === "Object" && v.fields) {
+    if ((v.type === "Object" || v.type === "List") && v.fields) {
       const fieldItems: Completion[] = [];
       for (const f of v.fields) {
         // Store "customer.name" → "String" in configVarTypes for type inference
@@ -354,13 +373,17 @@ export function dexprCompletion(info: DexprLanguageInfo): Extension {
     // e.g. path=["customer","name"] → look up "customer.name" in varTypes
     let currentType = rootType;
     for (let i = 1; i < path.length; i++) {
-      if (currentType !== "Object") {
+      if (currentType === "Object") {
+        const key = `${path[i - 1]}.${path[i]}`;
+        currentType = varTypes.get(key) ?? null;
+      } else if (currentType === "List") {
+        // Property projection: list.field → typed list
+        const key = `${path[0]}.${path[i]}`;
+        const fieldType = varTypes.get(key) ?? null;
+        currentType = projectedListType(fieldType);
+      } else {
         return { type: currentType, path };
       }
-      // "customer.name" key convention
-      const key = `${path[i - 1]}.${path[i]}`;
-      const fieldType = varTypes.get(key) ?? null;
-      currentType = fieldType;
     }
 
     return { type: currentType, path };
@@ -408,6 +431,12 @@ export function dexprCompletion(info: DexprLanguageInfo): Extension {
         const fieldItems = objectFieldCompletions.get(rootVarName) ?? [];
         const objMethods = methodsByType["Object"] ?? [];
         options = [...fieldItems, ...objMethods];
+      } else if (finalType === "List") {
+        // Show field names (property projection) + List methods
+        const rootVarName = path[0];
+        const fieldItems = objectFieldCompletions.get(rootVarName) ?? [];
+        const listMethods = methodsByType["List"] ?? [];
+        options = [...fieldItems, ...listMethods];
       } else if (finalType) {
         options = methodsByType[finalType] ?? allMethods;
       } else {

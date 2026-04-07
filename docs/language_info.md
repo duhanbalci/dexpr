@@ -29,7 +29,7 @@ Editör entegrasyonu için dil metadata'sı üretir. Built-in fonksiyonlar, tipe
 | Alan | Tip | Açıklama |
 |------|-----|----------|
 | `name` | `String` | Değişken adı |
-| `type_name` | `String` | Tip adı: `String`, `Number`, `Boolean`, `NumberList`, `StringList`, `Object` |
+| `type_name` | `String` | Tip adı: `String`, `Number`, `Boolean`, `NumberList`, `StringList`, `Object`, `List` |
 | `doc` | `Option<String>` | Opsiyonel açıklama |
 
 ### LanguageInfo
@@ -62,6 +62,7 @@ Tüm built-in fonksiyon ve metodları içeren yeni bir `LanguageInfo` oluşturur
 | `NumberList` | `length`, `len`, `isEmpty`, `first`, `last`, `get`, `contains`, `indexOf`, `slice`, `reverse`, `sort`, `sum`, `avg`, `min`, `max` |
 | `StringList` | `length`, `len`, `isEmpty`, `first`, `last`, `get`, `contains`, `indexOf`, `slice`, `reverse`, `sort`, `join` |
 | `Object` | `keys`, `values`, `length`, `len`, `contains`, `get` |
+| `List` | `length`, `len`, `isEmpty`, `first`, `last`, `get`, `contains`, `indexOf`, `slice`, `reverse`, `join`, `map`, `filter`, `find`, `sort` |
 
 ### `add_function(name, signature, doc)`
 

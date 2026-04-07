@@ -160,6 +160,7 @@ impl<'a> VM<'a> {
       Value::StringList(l) => Decimal::from(l.len()),
       Value::NumberList(l) => Decimal::from(l.len()),
       Value::Object(m) => Decimal::from(m.len()),
+      Value::List(l) => Decimal::from(l.len()),
       other => {
         return Err(VMError::RuntimeError(format!(
           "len() not supported for type {}",

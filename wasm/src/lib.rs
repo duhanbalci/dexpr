@@ -37,6 +37,9 @@ fn value_to_json(val: &Value) -> serde_json::Value {
                 .collect();
             serde_json::Value::Object(obj)
         }
+        Value::List(list) => {
+            serde_json::Value::Array(list.iter().map(|v| value_to_json(v)).collect())
+        }
     }
 }
 

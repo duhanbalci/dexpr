@@ -121,6 +121,19 @@ impl LanguageInfo {
                     type_name: v.type_name().to_string(),
                 }).collect())
             }
+            Value::List(list) => {
+                // For List of Objects, derive fields from the first Object element
+                list.iter().find_map(|item| {
+                    if let Value::Object(map) = item {
+                        Some(map.iter().map(|(k, v)| FieldInfo {
+                            name: k.to_string(),
+                            type_name: v.type_name().to_string(),
+                        }).collect())
+                    } else {
+                        None
+                    }
+                })
+            }
             _ => None,
         };
         self.variables.push(VariableInfo {
@@ -275,6 +288,23 @@ fn builtin_methods() -> Vec<(&'static str, Vec<MethodInfo>)> {
             MethodInfo { name: "len", signature: "() -> Number", doc: None },
             MethodInfo { name: "contains", signature: "(key: String) -> Boolean", doc: Some("Check if key exists") },
             MethodInfo { name: "get", signature: "(key: String) -> any", doc: Some("Get value by key") },
+        ]),
+        ("List", vec![
+            MethodInfo { name: "length", signature: "() -> Number", doc: Some("Number of elements") },
+            MethodInfo { name: "len", signature: "() -> Number", doc: None },
+            MethodInfo { name: "isEmpty", signature: "() -> Boolean", doc: None },
+            MethodInfo { name: "first", signature: "() -> any", doc: Some("First element") },
+            MethodInfo { name: "last", signature: "() -> any", doc: Some("Last element") },
+            MethodInfo { name: "get", signature: "(index: Number) -> any", doc: None },
+            MethodInfo { name: "contains", signature: "(value: any) -> Boolean", doc: None },
+            MethodInfo { name: "indexOf", signature: "(value: any) -> Number", doc: None },
+            MethodInfo { name: "slice", signature: "(start: Number, end?: Number) -> List", doc: None },
+            MethodInfo { name: "reverse", signature: "() -> List", doc: None },
+            MethodInfo { name: "join", signature: "(delim?: String) -> String", doc: None },
+            MethodInfo { name: "map", signature: "(field: String) -> NumberList | StringList | List", doc: Some("Extract field from each Object element") },
+            MethodInfo { name: "filter", signature: "(field: String, value?: any) -> List", doc: Some("Filter by field value or truthy field") },
+            MethodInfo { name: "find", signature: "(field: String, value?: any) -> any", doc: Some("Find first element matching field condition") },
+            MethodInfo { name: "sort", signature: "(field: String) -> List", doc: Some("Sort by field value") },
         ]),
         ("StringList", vec![
             MethodInfo { name: "length", signature: "() -> Number", doc: None },

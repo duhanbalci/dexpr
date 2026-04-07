@@ -26,6 +26,7 @@ impl<'a> VM<'a> {
       Value::StringList(_) => self.dispatch_string_list_method_inner(&obj_val, method, args),
       Value::NumberList(_) => self.dispatch_number_list_method_inner(&obj_val, method, args),
       Value::Object(_) => self.dispatch_object_method_inner(&obj_val, method, args),
+      Value::List(_) => self.dispatch_list_method_inner(&obj_val, method, args),
       _ => {
         // Try external methods for any type
         let type_name: SmolStr = obj_val.type_name().into();
@@ -452,9 +453,7 @@ impl<'a> VM<'a> {
             .collect();
           Ok(Value::NumberList(Rc::new(numbers)))
         } else {
-          Err(VMError::RuntimeError(
-            "values() only works when all values are the same type (String or Number)".to_string(),
-          ))
+          Ok(Value::List(Rc::new(vals)))
         }
       }
       "length" | "len" => Ok(Value::Number(Decimal::from(map.len()))),
@@ -491,6 +490,256 @@ impl<'a> VM<'a> {
         } else {
           Err(VMError::MethodNotFound {
             type_name: "Object",
+            method: SmolStr::from(method),
+          })
+        }
+      }
+    }
+  }
+
+  fn dispatch_list_method_inner(
+    &self,
+    obj_val: &Value,
+    method: &str,
+    args: &[Value],
+  ) -> Result<Value, VMError> {
+    let list = match obj_val {
+      Value::List(l) => l,
+      _ => unreachable!(),
+    };
+
+    match method {
+      "length" | "len" => Ok(Value::Number(Decimal::from(list.len()))),
+      "isEmpty" => Ok(Value::Boolean(list.is_empty())),
+      "first" => Ok(list.first().cloned().unwrap_or(Value::Null)),
+      "last" => Ok(list.last().cloned().unwrap_or(Value::Null)),
+      "get" => {
+        if args.is_empty() {
+          return Err(VMError::RuntimeError("get() requires an index".to_string()));
+        }
+        match &args[0] {
+          Value::Number(idx) => {
+            let index = idx.to_usize().unwrap_or(usize::MAX);
+            Ok(list.get(index).cloned().unwrap_or(Value::Null))
+          }
+          _ => Err(VMError::RuntimeError("get() requires a number index".to_string())),
+        }
+      }
+      "contains" => {
+        if args.is_empty() {
+          return Err(VMError::RuntimeError("contains() requires an argument".to_string()));
+        }
+        Ok(Value::Boolean(list.contains(&args[0])))
+      }
+      "indexOf" => {
+        if args.is_empty() {
+          return Err(VMError::RuntimeError("indexOf() requires an argument".to_string()));
+        }
+        let idx = list.iter().position(|item| item == &args[0]);
+        Ok(idx.map(|i| Value::Number(Decimal::from(i))).unwrap_or(Value::Number(Decimal::from(-1))))
+      }
+      "slice" => {
+        if args.is_empty() {
+          return Err(VMError::RuntimeError("slice() requires at least a start index".to_string()));
+        }
+        match &args[0] {
+          Value::Number(start_idx) => {
+            let start = start_idx.to_usize().unwrap_or(0).min(list.len());
+            let end = if args.len() > 1 {
+              match &args[1] {
+                Value::Number(end_idx) => end_idx.to_usize().unwrap_or(list.len()).min(list.len()),
+                _ => list.len(),
+              }
+            } else {
+              list.len()
+            };
+            Ok(Value::List(Rc::new(list[start..end].to_vec())))
+          }
+          _ => Err(VMError::RuntimeError("slice() requires a number index".to_string())),
+        }
+      }
+      "reverse" => {
+        let mut reversed = list.to_vec();
+        reversed.reverse();
+        Ok(Value::List(Rc::new(reversed)))
+      }
+      "join" => {
+        let delim = if args.is_empty() {
+          ""
+        } else {
+          match &args[0] {
+            Value::String(s) => s.as_str(),
+            _ => return Err(VMError::RuntimeError("join() requires a string delimiter".to_string())),
+          }
+        };
+        let strings: Vec<String> = list.iter().map(|v| format!("{}", v)).collect();
+        Ok(Value::String(SmolStr::new(strings.join(delim))))
+      }
+      "map" => {
+        // Property shorthand: list.map("fieldName") extracts a field from each Object element
+        if args.is_empty() {
+          return Err(VMError::RuntimeError("map() requires a field name argument".to_string()));
+        }
+        match &args[0] {
+          Value::String(field) => {
+            let mut values: Vec<Value> = Vec::with_capacity(list.len());
+            for item in list.iter() {
+              match item {
+                Value::Object(map) => {
+                  values.push(map.get(field.as_str()).cloned().unwrap_or(Value::Null));
+                }
+                _ => {
+                  return Err(VMError::RuntimeError(format!(
+                    "map() requires all elements to be Objects, got {}",
+                    item.type_name()
+                  )));
+                }
+              }
+            }
+            // Smart return type: if all values are the same primitive type, return typed list
+            if values.is_empty() {
+              return Ok(Value::List(Rc::new(values)));
+            }
+            if values.iter().all(|v| matches!(v, Value::Number(_))) {
+              let nums: Vec<Decimal> = values
+                .into_iter()
+                .map(|v| match v {
+                  Value::Number(n) => n,
+                  _ => unreachable!(),
+                })
+                .collect();
+              Ok(Value::NumberList(Rc::new(nums)))
+            } else if values.iter().all(|v| matches!(v, Value::String(_))) {
+              let strings: Vec<SmolStr> = values
+                .into_iter()
+                .map(|v| match v {
+                  Value::String(s) => s,
+                  _ => unreachable!(),
+                })
+                .collect();
+              Ok(Value::StringList(Rc::new(strings)))
+            } else {
+              Ok(Value::List(Rc::new(values)))
+            }
+          }
+          _ => Err(VMError::RuntimeError("map() requires a string field name".to_string())),
+        }
+      }
+      "filter" => {
+        // Property shorthand:
+        //   list.filter("active")           — filter by truthy boolean field
+        //   list.filter("field", value)     — filter where field == value
+        if args.is_empty() {
+          return Err(VMError::RuntimeError("filter() requires a field name argument".to_string()));
+        }
+        match &args[0] {
+          Value::String(field) => {
+            let filtered: Result<Vec<Value>, VMError> = list
+              .iter()
+              .filter_map(|item| {
+                match item {
+                  Value::Object(map) => {
+                    let field_val = map.get(field.as_str()).cloned().unwrap_or(Value::Null);
+                    if args.len() > 1 {
+                      // filter("field", value) — equality check
+                      if field_val == args[1] {
+                        Some(Ok(item.clone()))
+                      } else {
+                        None
+                      }
+                    } else {
+                      // filter("field") — truthy check
+                      match &field_val {
+                        Value::Boolean(b) => if *b { Some(Ok(item.clone())) } else { None },
+                        Value::Null => None,
+                        _ => Some(Ok(item.clone())),
+                      }
+                    }
+                  }
+                  _ => Some(Err(VMError::RuntimeError(format!(
+                    "filter() requires all elements to be Objects, got {}",
+                    item.type_name()
+                  )))),
+                }
+              })
+              .collect();
+            Ok(Value::List(Rc::new(filtered?)))
+          }
+          _ => Err(VMError::RuntimeError("filter() requires a string field name".to_string())),
+        }
+      }
+      "find" => {
+        // Property shorthand: list.find("field", value) — first element where field == value
+        if args.is_empty() {
+          return Err(VMError::RuntimeError("find() requires a field name argument".to_string()));
+        }
+        match &args[0] {
+          Value::String(field) => {
+            for item in list.iter() {
+              match item {
+                Value::Object(map) => {
+                  let field_val = map.get(field.as_str()).cloned().unwrap_or(Value::Null);
+                  if args.len() > 1 {
+                    if field_val == args[1] {
+                      return Ok(item.clone());
+                    }
+                  } else {
+                    // find("field") — first with truthy field
+                    match &field_val {
+                      Value::Boolean(b) => if *b { return Ok(item.clone()); },
+                      Value::Null => {},
+                      _ => return Ok(item.clone()),
+                    }
+                  }
+                }
+                _ => {
+                  return Err(VMError::RuntimeError(format!(
+                    "find() requires all elements to be Objects, got {}",
+                    item.type_name()
+                  )));
+                }
+              }
+            }
+            Ok(Value::Null)
+          }
+          _ => Err(VMError::RuntimeError("find() requires a string field name".to_string())),
+        }
+      }
+      "sort" => {
+        // Property shorthand: list.sort("field") — sort by field value
+        if args.is_empty() {
+          return Err(VMError::RuntimeError("sort() on List requires a field name argument".to_string()));
+        }
+        match &args[0] {
+          Value::String(field) => {
+            let mut sorted = list.to_vec();
+            sorted.sort_by(|a, b| {
+              let a_val = match a {
+                Value::Object(map) => map.get(field.as_str()).cloned().unwrap_or(Value::Null),
+                _ => Value::Null,
+              };
+              let b_val = match b {
+                Value::Object(map) => map.get(field.as_str()).cloned().unwrap_or(Value::Null),
+                _ => Value::Null,
+              };
+              match (&a_val, &b_val) {
+                (Value::Number(a), Value::Number(b)) => a.cmp(b),
+                (Value::String(a), Value::String(b)) => a.cmp(b),
+                _ => std::cmp::Ordering::Equal,
+              }
+            });
+            Ok(Value::List(Rc::new(sorted)))
+          }
+          _ => Err(VMError::RuntimeError("sort() requires a string field name".to_string())),
+        }
+      }
+      _ => {
+        let key = (SmolStr::new_static("List"), SmolStr::from(method));
+        if let Some(ext_method) = self.external_methods.as_ref().and_then(|m| m.get(&key)) {
+          ext_method(obj_val, args).map_err(VMError::RuntimeError)
+        } else {
+          Err(VMError::MethodNotFound {
+            type_name: "List",
             method: SmolStr::from(method),
           })
         }

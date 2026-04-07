@@ -88,12 +88,13 @@ struct Spanned<T> { node: T, span: Span }
 | `NumberList(Vec<Decimal>)` | `Vec<Decimal>` | Sayı listesi |
 | `StringList(Vec<SmolStr>)` | `Vec<SmolStr>` | String listesi |
 | `Object(IndexMap<SmolStr, Value>)` | `IndexMap<SmolStr, Value>` | Anahtar-değer nesnesi |
+| `List(Vec<Value>)` | `Vec<Value>` | Genel liste (object array dahil) |
 
 ### Serileştirme
 
 Her `Value` bytecode'a gömülebilir. Serileştirme formatı:
 
-1. **Tip etiketi** (1 byte): `NULL=0x00`, `NUMBER=0x01`, `STRING=0x02`, `BOOLEAN=0x03`, `NUMBER_LIST=0x04`, `STRING_LIST=0x05`, `OBJECT=0x06`
+1. **Tip etiketi** (1 byte): `NULL=0x00`, `NUMBER=0x01`, `STRING=0x02`, `BOOLEAN=0x03`, `NUMBER_LIST=0x04`, `STRING_LIST=0x05`, `OBJECT=0x06`, `LIST=0x07`
 2. **Veri:**
    - Number: 16 byte (Decimal serialization)
    - String: 2-byte uzunluk + UTF-8 bytes
@@ -101,6 +102,7 @@ Her `Value` bytecode'a gömülebilir. Serileştirme formatı:
    - NumberList: 2-byte count + her sayı için 16 byte
    - StringList: 2-byte count + her string için (2-byte uzunluk + bytes)
    - Object: 2-byte entry count + her girdi için (anahtar: 2-byte uzunluk + bytes, değer: rekürsif serialize)
+   - List: 2-byte count + her eleman için rekürsif serialize
 
 `serialize()` ve `deserialize()` metodları bu dönüşümü gerçekleştirir.
 

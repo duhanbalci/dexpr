@@ -597,6 +597,8 @@ impl<'a> VM<'a> {
       }
       // String in Object (key check)
       (Value::String(key), Value::Object(map)) => map.contains_key(key),
+      // Value in List
+      (needle_val, Value::List(list)) => list.contains(needle_val),
       (needle_val, haystack_val) => {
         return Err(VMError::InvalidOperation {
           operation: "in",
@@ -683,6 +685,42 @@ impl<'a> VM<'a> {
       Value::Object(map) => {
         let value = map.get(prop).cloned().unwrap_or(Value::Null);
         self.registers[dest] = value;
+      }
+      Value::List(list) => {
+        // Property projection: list.field → extract field from each Object element
+        let mut values: Vec<Value> = Vec::with_capacity(list.len());
+        for item in list.iter() {
+          match item {
+            Value::Object(map) => {
+              values.push(map.get(prop).cloned().unwrap_or(Value::Null));
+            }
+            _ => {
+              return Err(VMError::RuntimeError(format!(
+                "Cannot access property '{}' on non-Object element in List (got {})",
+                prop,
+                item.type_name()
+              )));
+            }
+          }
+        }
+        // Smart return type: NumberList/StringList when homogeneous
+        if values.is_empty() {
+          self.registers[dest] = Value::List(Rc::new(values));
+        } else if values.iter().all(|v| matches!(v, Value::Number(_))) {
+          let nums: Vec<Decimal> = values.into_iter().map(|v| match v {
+            Value::Number(n) => n,
+            _ => unreachable!(),
+          }).collect();
+          self.registers[dest] = Value::NumberList(Rc::new(nums));
+        } else if values.iter().all(|v| matches!(v, Value::String(_))) {
+          let strings: Vec<SmolStr> = values.into_iter().map(|v| match v {
+            Value::String(s) => s,
+            _ => unreachable!(),
+          }).collect();
+          self.registers[dest] = Value::StringList(Rc::new(strings));
+        } else {
+          self.registers[dest] = Value::List(Rc::new(values));
+        }
       }
       other => {
         return Err(VMError::RuntimeError(format!(

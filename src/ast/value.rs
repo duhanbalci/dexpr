@@ -15,6 +15,7 @@ pub enum Value {
   NumberList(Rc<Vec<Decimal>>),
   StringList(Rc<Vec<SmolStr>>),
   Object(Rc<IndexMap<SmolStr, Value>>),
+  List(Rc<Vec<Value>>),
 }
 
 /// Type tag constants for serialization
@@ -25,6 +26,7 @@ pub const TYPE_BOOLEAN: u8 = 0x03;
 pub const TYPE_NUMBER_LIST: u8 = 0x04;
 pub const TYPE_STRING_LIST: u8 = 0x05;
 pub const TYPE_OBJECT: u8 = 0x06;
+pub const TYPE_LIST: u8 = 0x07;
 
 impl fmt::Display for Value {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -63,6 +65,16 @@ impl fmt::Display for Value {
         }
         write!(f, "}}")
       }
+      Value::List(list) => {
+        write!(f, "[")?;
+        for (i, val) in list.iter().enumerate() {
+          if i > 0 {
+            write!(f, ", ")?;
+          }
+          write!(f, "{}", val)?;
+        }
+        write!(f, "]")
+      }
     }
   }
 }
@@ -78,6 +90,7 @@ impl Value {
       Value::NumberList(_) => TYPE_NUMBER_LIST,
       Value::StringList(_) => TYPE_STRING_LIST,
       Value::Object(_) => TYPE_OBJECT,
+      Value::List(_) => TYPE_LIST,
     }
   }
 
@@ -91,6 +104,7 @@ impl Value {
       Value::NumberList(_) => "NumberList",
       Value::StringList(_) => "StringList",
       Value::Object(_) => "Object",
+      Value::List(_) => "List",
     }
   }
 
@@ -147,6 +161,15 @@ impl Value {
           bytes.push((key.len() >> 8) as u8);
           bytes.push(key.len() as u8);
           bytes.extend_from_slice(key.as_bytes());
+          bytes.extend_from_slice(&val.serialize());
+        }
+      }
+      Value::List(list) => {
+        // List length (2 bytes)
+        bytes.push((list.len() >> 8) as u8);
+        bytes.push(list.len() as u8);
+        // List items (recursive serialization)
+        for val in list.iter() {
           bytes.extend_from_slice(&val.serialize());
         }
       }
@@ -223,6 +246,12 @@ impl From<Vec<SmolStr>> for Value {
 impl From<IndexMap<SmolStr, Value>> for Value {
   fn from(m: IndexMap<SmolStr, Value>) -> Self {
     Value::Object(Rc::new(m))
+  }
+}
+
+impl From<Vec<Value>> for Value {
+  fn from(v: Vec<Value>) -> Self {
+    Value::List(Rc::new(v))
   }
 }
 
@@ -357,6 +386,22 @@ impl Value {
 
         Ok((Value::Object(Rc::new(map)), pos))
       }
+      TYPE_LIST => {
+        if bytes.len() < pos + 2 {
+          return Err("Insufficient bytes for List length".to_string());
+        }
+        let len = u16::from_be_bytes([bytes[pos], bytes[pos + 1]]) as usize;
+        pos += 2;
+
+        let mut list = Vec::with_capacity(len);
+        for _ in 0..len {
+          let (val, val_bytes) = Value::deserialize(&bytes[pos..])?;
+          pos += val_bytes;
+          list.push(val);
+        }
+
+        Ok((Value::List(Rc::new(list)), pos))
+      }
       _ => Err(format!("Unknown type tag: {}", type_tag)),
     }
   }
@@ -426,7 +471,11 @@ impl Value {
             .collect();
           Ok(Value::StringList(Rc::new(strings)))
         } else {
-          Err("Arrays must contain all numbers or all strings".to_string())
+          let mut items = Vec::with_capacity(arr.len());
+          for item in arr {
+            items.push(Self::from_json_value(item)?);
+          }
+          Ok(Value::List(Rc::new(items)))
         }
       }
       serde_json::Value::Object(obj) => {

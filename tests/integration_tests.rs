@@ -1335,3 +1335,608 @@ fn test_from_json_full_workflow() {
   let r = run_and_get_result_with_globals(code, vec![("customer", customer)]);
   assert_eq!(r, Value::String("premium".into()));
 }
+
+// ==================== LIST (ARRAY OF OBJECTS) TESTS ====================
+
+/// Build the invoice items test data
+fn kalemler() -> Value {
+  let items: Vec<Value> = vec![
+    make_kalem(1, "Web Uygulama Gelistirme", 1, "Adet", dec!(45000), dec!(45000)),
+    make_kalem(2, "Mobil Uygulama Gelistirme", 1, "Adet", dec!(35000), dec!(35000)),
+    make_kalem(3, "UI/UX Tasarim Hizmeti", 40, "Saat", dec!(750), dec!(30000)),
+    make_kalem(4, "Sunucu Bakim Sozlesmesi (Yillik)", 1, "Adet", dec!(12000), dec!(12000)),
+    make_kalem(5, "SSL Sertifikasi", 3, "Adet", dec!(500), dec!(1500)),
+    make_kalem(6, "Veritabani Yonetimi", 12, "Ay", dec!(2000), dec!(24000)),
+    make_kalem(7, "API Entegrasyon Hizmeti", 1, "Adet", dec!(18000), dec!(18000)),
+    make_kalem(8, "Bulut Altyapi Kurulumu", 1, "Adet", dec!(8000), dec!(8000)),
+    make_kalem(9, "Siber Guvenlik Danismanligi", 20, "Saat", dec!(900), dec!(18000)),
+    make_kalem(10, "E-posta Sunucu Yapilandirmasi", 1, "Adet", dec!(3500), dec!(3500)),
+    make_kalem(11, "Yedekleme Sistemi Kurulumu", 1, "Adet", dec!(5000), dec!(5000)),
+    make_kalem(12, "SEO Optimizasyonu", 1, "Adet", dec!(7500), dec!(7500)),
+    make_kalem(13, "Egitim ve Dokumantasyon", 8, "Saat", dec!(600), dec!(4800)),
+    make_kalem(14, "Performans Testi ve Raporlama", 1, "Adet", dec!(6000), dec!(6000)),
+    make_kalem(15, "Teknik Destek Paketi (6 Ay)", 1, "Adet", dec!(9000), dec!(9000)),
+  ];
+  Value::List(Rc::new(items))
+}
+
+fn make_kalem(sira_no: i64, adi: &str, miktar: i64, birim: &str, birim_fiyat: rust_decimal::Decimal, tutar: rust_decimal::Decimal) -> Value {
+  let mut map = IndexMap::new();
+  map.insert(SmolStr::new("siraNo"), Value::Number(rust_decimal::Decimal::from(sira_no)));
+  map.insert(SmolStr::new("adi"), Value::String(SmolStr::new(adi)));
+  map.insert(SmolStr::new("miktar"), Value::Number(rust_decimal::Decimal::from(miktar)));
+  map.insert(SmolStr::new("birim"), Value::String(SmolStr::new(birim)));
+  map.insert(SmolStr::new("birimFiyat"), Value::Number(birim_fiyat));
+  map.insert(SmolStr::new("tutar"), Value::Number(tutar));
+  Value::Object(Rc::new(map))
+}
+
+// --- List: length / len ---
+
+#[test]
+fn test_list_length() {
+  let result = run_expr_with_globals("kalemler.length()", vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Number(dec!(15)));
+}
+
+#[test]
+fn test_list_len() {
+  let result = run_expr_with_globals("kalemler.len()", vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Number(dec!(15)));
+}
+
+// --- List: isEmpty ---
+
+#[test]
+fn test_list_is_empty_false() {
+  let result = run_expr_with_globals("kalemler.isEmpty()", vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Boolean(false));
+}
+
+#[test]
+fn test_list_is_empty_true() {
+  let empty = Value::List(Rc::new(vec![]));
+  let result = run_expr_with_globals("items.isEmpty()", vec![("items", empty)]);
+  assert_eq!(result, Value::Boolean(true));
+}
+
+// --- List: first / last ---
+
+#[test]
+fn test_list_first() {
+  let result = run_expr_with_globals("kalemler.first().adi", vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::String("Web Uygulama Gelistirme".into()));
+}
+
+#[test]
+fn test_list_last() {
+  let result = run_expr_with_globals("kalemler.last().adi", vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::String("Teknik Destek Paketi (6 Ay)".into()));
+}
+
+#[test]
+fn test_list_first_empty() {
+  let empty = Value::List(Rc::new(vec![]));
+  let result = run_expr_with_globals("items.first()", vec![("items", empty)]);
+  assert_eq!(result, Value::Null);
+}
+
+#[test]
+fn test_list_last_empty() {
+  let empty = Value::List(Rc::new(vec![]));
+  let result = run_expr_with_globals("items.last()", vec![("items", empty)]);
+  assert_eq!(result, Value::Null);
+}
+
+// --- List: get ---
+
+#[test]
+fn test_list_get() {
+  let result = run_expr_with_globals("kalemler.get(2).adi", vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::String("UI/UX Tasarim Hizmeti".into()));
+}
+
+#[test]
+fn test_list_get_out_of_bounds() {
+  let result = run_expr_with_globals("kalemler.get(100)", vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Null);
+}
+
+// --- List: contains ---
+
+#[test]
+fn test_list_contains() {
+  let items = Value::List(Rc::new(vec![
+    Value::Number(dec!(1)),
+    Value::Number(dec!(2)),
+    Value::Number(dec!(3)),
+  ]));
+  let result = run_expr_with_globals("items.contains(2)", vec![("items", items)]);
+  assert_eq!(result, Value::Boolean(true));
+}
+
+#[test]
+fn test_list_contains_false() {
+  let items = Value::List(Rc::new(vec![
+    Value::Number(dec!(1)),
+    Value::Number(dec!(2)),
+  ]));
+  let result = run_expr_with_globals("items.contains(5)", vec![("items", items)]);
+  assert_eq!(result, Value::Boolean(false));
+}
+
+// --- List: indexOf ---
+
+#[test]
+fn test_list_index_of() {
+  let items = Value::List(Rc::new(vec![
+    Value::String("a".into()),
+    Value::String("b".into()),
+    Value::String("c".into()),
+  ]));
+  let result = run_expr_with_globals(r#"items.indexOf("b")"#, vec![("items", items)]);
+  assert_eq!(result, Value::Number(dec!(1)));
+}
+
+#[test]
+fn test_list_index_of_not_found() {
+  let items = Value::List(Rc::new(vec![
+    Value::String("a".into()),
+  ]));
+  let result = run_expr_with_globals(r#"items.indexOf("z")"#, vec![("items", items)]);
+  assert_eq!(result, Value::Number(dec!(-1)));
+}
+
+// --- List: slice ---
+
+#[test]
+fn test_list_slice() {
+  let result = run_expr_with_globals("kalemler.slice(0, 3).length()", vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Number(dec!(3)));
+}
+
+#[test]
+fn test_list_slice_to_end() {
+  let result = run_expr_with_globals("kalemler.slice(13).length()", vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Number(dec!(2)));
+}
+
+// --- List: reverse ---
+
+#[test]
+fn test_list_reverse() {
+  let result = run_expr_with_globals("kalemler.reverse().first().adi", vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::String("Teknik Destek Paketi (6 Ay)".into()));
+}
+
+// --- List: join ---
+
+#[test]
+fn test_list_join() {
+  let items = Value::List(Rc::new(vec![
+    Value::Number(dec!(1)),
+    Value::Number(dec!(2)),
+    Value::Number(dec!(3)),
+  ]));
+  let result = run_expr_with_globals(r#"items.join(", ")"#, vec![("items", items)]);
+  assert_eq!(result, Value::String("1, 2, 3".into()));
+}
+
+// --- List: map (property shorthand) ---
+
+#[test]
+fn test_list_map_number_field() {
+  // map("tutar") should return NumberList when all values are Number
+  let result = run_expr_with_globals(r#"kalemler.map("tutar").sum()"#, vec![("kalemler", kalemler())]);
+  // 45000+35000+30000+12000+1500+24000+18000+8000+18000+3500+5000+7500+4800+6000+9000 = 227300
+  assert_eq!(result, Value::Number(dec!(227300)));
+}
+
+#[test]
+fn test_list_map_string_field() {
+  // map("birim") should return StringList when all values are String
+  let result = run_expr_with_globals(r#"kalemler.map("birim").contains("Saat")"#, vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Boolean(true));
+}
+
+#[test]
+fn test_list_map_string_field_join() {
+  let items = Value::List(Rc::new(vec![
+    make_kalem(1, "A", 1, "X", dec!(10), dec!(10)),
+    make_kalem(2, "B", 1, "Y", dec!(20), dec!(20)),
+  ]));
+  let result = run_expr_with_globals(r#"items.map("adi").join(", ")"#, vec![("items", items)]);
+  assert_eq!(result, Value::String("A, B".into()));
+}
+
+// --- The main use case: kalemler.map("tutar").sum() * kdvOrani ---
+
+#[test]
+fn test_list_map_sum_multiply() {
+  let code = r#"kalemler.map("tutar").sum() * kdvOrani"#;
+  let result = run_expr_with_globals(code, vec![
+    ("kalemler", kalemler()),
+    ("kdvOrani", Value::Number(dec!(0.20))),
+  ]);
+  // 227300 * 0.20 = 45460
+  assert_eq!(result, Value::Number(dec!(45460.00)));
+}
+
+#[test]
+fn test_list_map_avg() {
+  let result = run_expr_with_globals(r#"kalemler.map("tutar").avg()"#, vec![("kalemler", kalemler())]);
+  // 227300 / 15 = 15153.333...
+  let avg = result.clone();
+  match avg {
+    Value::Number(n) => {
+      let rounded = n.round_dp(2);
+      assert_eq!(rounded, dec!(15153.33));
+    }
+    _ => panic!("Expected Number, got {:?}", avg),
+  }
+}
+
+#[test]
+fn test_list_map_min() {
+  let result = run_expr_with_globals(r#"kalemler.map("tutar").min()"#, vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Number(dec!(1500)));
+}
+
+#[test]
+fn test_list_map_max() {
+  let result = run_expr_with_globals(r#"kalemler.map("tutar").max()"#, vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Number(dec!(45000)));
+}
+
+// --- List: filter ---
+
+#[test]
+fn test_list_filter_by_value() {
+  let result = run_expr_with_globals(
+    r#"kalemler.filter("birim", "Saat").length()"#,
+    vec![("kalemler", kalemler())],
+  );
+  // Items 3, 9, 13 have birim="Saat"
+  assert_eq!(result, Value::Number(dec!(3)));
+}
+
+#[test]
+fn test_list_filter_by_value_sum() {
+  let result = run_expr_with_globals(
+    r#"kalemler.filter("birim", "Saat").map("tutar").sum()"#,
+    vec![("kalemler", kalemler())],
+  );
+  // 30000 + 18000 + 4800 = 52800
+  assert_eq!(result, Value::Number(dec!(52800)));
+}
+
+#[test]
+fn test_list_filter_by_boolean_field() {
+  let items = Value::List(Rc::new(vec![
+    {
+      let mut m = IndexMap::new();
+      m.insert(SmolStr::new("name"), Value::String("A".into()));
+      m.insert(SmolStr::new("active"), Value::Boolean(true));
+      Value::Object(Rc::new(m))
+    },
+    {
+      let mut m = IndexMap::new();
+      m.insert(SmolStr::new("name"), Value::String("B".into()));
+      m.insert(SmolStr::new("active"), Value::Boolean(false));
+      Value::Object(Rc::new(m))
+    },
+    {
+      let mut m = IndexMap::new();
+      m.insert(SmolStr::new("name"), Value::String("C".into()));
+      m.insert(SmolStr::new("active"), Value::Boolean(true));
+      Value::Object(Rc::new(m))
+    },
+  ]));
+  let result = run_expr_with_globals(r#"items.filter("active").length()"#, vec![("items", items)]);
+  assert_eq!(result, Value::Number(dec!(2)));
+}
+
+// --- List: find ---
+
+#[test]
+fn test_list_find_by_value() {
+  let result = run_expr_with_globals(
+    r#"kalemler.find("siraNo", 5).adi"#,
+    vec![("kalemler", kalemler())],
+  );
+  assert_eq!(result, Value::String("SSL Sertifikasi".into()));
+}
+
+#[test]
+fn test_list_find_not_found() {
+  let result = run_expr_with_globals(
+    r#"kalemler.find("siraNo", 99)"#,
+    vec![("kalemler", kalemler())],
+  );
+  assert_eq!(result, Value::Null);
+}
+
+// --- List: sort ---
+
+#[test]
+fn test_list_sort_by_field() {
+  let result = run_expr_with_globals(
+    r#"kalemler.sort("tutar").first().adi"#,
+    vec![("kalemler", kalemler())],
+  );
+  // Smallest tutar is 1500 (SSL Sertifikasi)
+  assert_eq!(result, Value::String("SSL Sertifikasi".into()));
+}
+
+#[test]
+fn test_list_sort_by_field_last() {
+  let result = run_expr_with_globals(
+    r#"kalemler.sort("tutar").last().adi"#,
+    vec![("kalemler", kalemler())],
+  );
+  // Largest tutar is 45000 (Web Uygulama Gelistirme)
+  assert_eq!(result, Value::String("Web Uygulama Gelistirme".into()));
+}
+
+// --- List: in operator ---
+
+#[test]
+fn test_list_in_operator() {
+  let items = Value::List(Rc::new(vec![
+    Value::String("a".into()),
+    Value::String("b".into()),
+    Value::String("c".into()),
+  ]));
+  let result = run_expr_with_globals(r#""b" in items"#, vec![("items", items)]);
+  assert_eq!(result, Value::Boolean(true));
+}
+
+#[test]
+fn test_list_in_operator_false() {
+  let items = Value::List(Rc::new(vec![
+    Value::Number(dec!(1)),
+    Value::Number(dec!(2)),
+  ]));
+  let result = run_expr_with_globals("5 in items", vec![("items", items)]);
+  assert_eq!(result, Value::Boolean(false));
+}
+
+// --- List: len() builtin function ---
+
+#[test]
+fn test_list_builtin_len() {
+  let result = run_expr_with_globals("len(kalemler)", vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Number(dec!(15)));
+}
+
+// --- List: from_json ---
+
+#[test]
+fn test_list_from_json() {
+  let json = r#"[{"a": 1}, {"a": 2}]"#;
+  let val = Value::from_json(json).unwrap();
+  match &val {
+    Value::List(list) => {
+      assert_eq!(list.len(), 2);
+      match &list[0] {
+        Value::Object(map) => assert_eq!(map.get("a"), Some(&Value::Number(dec!(1)))),
+        other => panic!("Expected Object, got {:?}", other),
+      }
+    }
+    other => panic!("Expected List, got {:?}", other),
+  }
+}
+
+#[test]
+fn test_list_from_json_mixed() {
+  // Mixed types in array → List
+  let json = r#"[1, "hello", true]"#;
+  let val = Value::from_json(json).unwrap();
+  match &val {
+    Value::List(list) => {
+      assert_eq!(list.len(), 3);
+      assert_eq!(list[0], Value::Number(dec!(1)));
+      assert_eq!(list[1], Value::String("hello".into()));
+      assert_eq!(list[2], Value::Boolean(true));
+    }
+    other => panic!("Expected List, got {:?}", other),
+  }
+}
+
+// --- List: serialization round-trip ---
+
+#[test]
+fn test_list_serialize_deserialize() {
+  let original = Value::List(Rc::new(vec![
+    Value::Number(dec!(42)),
+    Value::String("hello".into()),
+    Value::Boolean(true),
+  ]));
+  let bytes = original.serialize();
+  let (deserialized, _) = Value::deserialize(&bytes).unwrap();
+  assert_eq!(original, deserialized);
+}
+
+#[test]
+fn test_list_serialize_deserialize_objects() {
+  let original = kalemler();
+  let bytes = original.serialize();
+  let (deserialized, _) = Value::deserialize(&bytes).unwrap();
+  assert_eq!(original, deserialized);
+}
+
+// --- List: chained operations ---
+
+#[test]
+fn test_list_chain_filter_map_sum() {
+  // Filter only "Adet" items, then sum their tutars
+  let code = r#"kalemler.filter("birim", "Adet").map("tutar").sum()"#;
+  let result = run_expr_with_globals(code, vec![("kalemler", kalemler())]);
+  // Adet items: 45000+35000+12000+1500+18000+8000+3500+5000+7500+6000+9000 = 150500
+  assert_eq!(result, Value::Number(dec!(150500)));
+}
+
+#[test]
+fn test_list_chain_filter_length() {
+  let code = r#"kalemler.filter("birim", "Ay").length()"#;
+  let result = run_expr_with_globals(code, vec![("kalemler", kalemler())]);
+  // Only item 6 (Veritabani Yonetimi) has birim="Ay"
+  assert_eq!(result, Value::Number(dec!(1)));
+}
+
+#[test]
+fn test_list_chain_sort_slice_map() {
+  // Sort by tutar, take top 3, get names
+  let code = r#"kalemler.sort("tutar").reverse().slice(0, 3).map("adi").join(", ")"#;
+  let result = run_expr_with_globals(code, vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::String("Web Uygulama Gelistirme, Mobil Uygulama Gelistirme, UI/UX Tasarim Hizmeti".into()));
+}
+
+// --- Object values() now returns List for mixed types ---
+
+#[test]
+fn test_object_values_mixed_returns_list() {
+  let mut map = IndexMap::new();
+  map.insert(SmolStr::new("name"), Value::String("Alice".into()));
+  map.insert(SmolStr::new("age"), Value::Number(dec!(30)));
+  let obj = Value::Object(Rc::new(map));
+  let result = run_expr_with_globals("item.values().length()", vec![("item", obj)]);
+  assert_eq!(result, Value::Number(dec!(2)));
+}
+
+// --- List: Display ---
+
+#[test]
+fn test_list_display() {
+  let list = Value::List(Rc::new(vec![
+    Value::Number(dec!(1)),
+    Value::String("hello".into()),
+    Value::Boolean(true),
+  ]));
+  assert_eq!(format!("{}", list), r#"[1, "hello", true]"#);
+}
+
+// --- List: complex invoice scenario ---
+
+#[test]
+fn test_invoice_total_with_kdv() {
+  let code = r#"
+    araToplam = kalemler.map("tutar").sum()
+    kdv = araToplam * kdvOrani
+    result = araToplam + kdv
+  "#;
+  let result = run_and_get_result_with_globals(code, vec![
+    ("kalemler", kalemler()),
+    ("kdvOrani", Value::Number(dec!(0.20))),
+  ]);
+  // 227300 + 45460 = 272760
+  assert_eq!(result, Value::Number(dec!(272760.00)));
+}
+
+#[test]
+fn test_invoice_item_count_by_birim() {
+  let code = r#"
+    adetSayisi = kalemler.filter("birim", "Adet").length()
+    saatSayisi = kalemler.filter("birim", "Saat").length()
+    result = adetSayisi + saatSayisi
+  "#;
+  let result = run_and_get_result_with_globals(code, vec![("kalemler", kalemler())]);
+  // 11 Adet + 3 Saat = 14
+  assert_eq!(result, Value::Number(dec!(14)));
+}
+
+#[test]
+fn test_invoice_find_and_access_property() {
+  let code = r#"kalemler.find("adi", "SSL Sertifikasi").birimFiyat"#;
+  let result = run_expr_with_globals(code, vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Number(dec!(500)));
+}
+
+// ==================== LIST PROPERTY PROJECTION TESTS ====================
+
+#[test]
+fn test_list_property_projection_number() {
+  // kalemler.tutar → NumberList
+  let result = run_expr_with_globals("kalemler.tutar.sum()", vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Number(dec!(227300)));
+}
+
+#[test]
+fn test_list_property_projection_string() {
+  // kalemler.adi → StringList
+  let result = run_expr_with_globals(r#"kalemler.birim.contains("Saat")"#, vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Boolean(true));
+}
+
+#[test]
+fn test_list_property_projection_sum_multiply() {
+  // The main use case: kalemler.tutar.sum() * kdvOrani
+  let code = "kalemler.tutar.sum() * kdvOrani";
+  let result = run_expr_with_globals(code, vec![
+    ("kalemler", kalemler()),
+    ("kdvOrani", Value::Number(dec!(0.20))),
+  ]);
+  assert_eq!(result, Value::Number(dec!(45460.00)));
+}
+
+#[test]
+fn test_list_property_projection_min_max() {
+  let result = run_expr_with_globals("kalemler.tutar.min()", vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Number(dec!(1500)));
+
+  let result = run_expr_with_globals("kalemler.tutar.max()", vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::Number(dec!(45000)));
+}
+
+#[test]
+fn test_list_property_projection_join() {
+  let items = Value::List(Rc::new(vec![
+    make_kalem(1, "A", 1, "X", dec!(10), dec!(10)),
+    make_kalem(2, "B", 1, "Y", dec!(20), dec!(20)),
+  ]));
+  let result = run_expr_with_globals(r#"items.adi.join(", ")"#, vec![("items", items)]);
+  assert_eq!(result, Value::String("A, B".into()));
+}
+
+#[test]
+fn test_list_property_projection_chained_with_filter() {
+  // filter → projection: kalemler.filter("birim", "Saat").tutar.sum()
+  let code = r#"kalemler.filter("birim", "Saat").tutar.sum()"#;
+  let result = run_expr_with_globals(code, vec![("kalemler", kalemler())]);
+  // Saat items: 30000 + 18000 + 4800 = 52800
+  assert_eq!(result, Value::Number(dec!(52800)));
+}
+
+#[test]
+fn test_list_property_projection_empty() {
+  let empty = Value::List(Rc::new(vec![]));
+  let result = run_expr_with_globals("items.tutar", vec![("items", empty)]);
+  match result {
+    Value::List(l) => assert!(l.is_empty()),
+    _ => panic!("Expected empty List, got {:?}", result),
+  }
+}
+
+#[test]
+fn test_list_property_projection_with_sort() {
+  // sort → projection
+  let code = r#"kalemler.sort("tutar").adi.first()"#;
+  let result = run_expr_with_globals(code, vec![("kalemler", kalemler())]);
+  assert_eq!(result, Value::String("SSL Sertifikasi".into()));
+}
+
+#[test]
+fn test_invoice_full_scenario() {
+  let code = r#"
+    araToplam = kalemler.tutar.sum()
+    kdv = araToplam * kdvOrani
+    genelToplam = araToplam + kdv
+    saatlikHizmetler = kalemler.filter("birim", "Saat").tutar.sum()
+    result = genelToplam
+  "#;
+  let result = run_and_get_result_with_globals(code, vec![
+    ("kalemler", kalemler()),
+    ("kdvOrani", Value::Number(dec!(0.20))),
+  ]);
+  assert_eq!(result, Value::Number(dec!(272760.00)));
+}

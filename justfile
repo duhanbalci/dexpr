@@ -14,7 +14,7 @@ run:
 
 # --- Publish ---
 
-# Publish to Gitea cargo registry
+# Publish dexpr to Gitea cargo registry
 publish:
     cargo publish --registry gitea --allow-dirty
 
@@ -22,11 +22,11 @@ publish:
 
 # Build wasm package (web target)
 wasm:
-    cd wasm && wasm-pack build --target web --release
+    cd wasm && wasm-pack build --target web --release --scope duhanbalci
 
 # Build wasm package (bundler target, for npm)
 wasm-bundler:
-    cd wasm && wasm-pack build --target bundler --release
+    cd wasm && wasm-pack build --target bundler --release --scope duhanbalci
 
 # --- Editor ---
 
@@ -41,6 +41,14 @@ editor-build: editor-grammar
 # Build editor demo page
 editor-demo: editor-build
     cd editor && bun run demo
+
+# Publish editor package to Gitea npm registry
+editor-publish: editor-build
+    cd editor && npm publish
+
+# Publish wasm package to Gitea npm registry
+wasm-publish: wasm-bundler
+    cd wasm/pkg && npm publish
 
 # --- Combined ---
 
