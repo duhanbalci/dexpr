@@ -2069,3 +2069,138 @@ fn test_string_compare_in_condition() {
   "#;
   assert_eq!(run_and_get_result(code), Value::Number(dec!(80)));
 }
+
+// ==================== SHORT-CIRCUIT / LIST AGGREGATE / LENGTH TESTS ====================
+
+fn num_list(v: &[i64]) -> Value {
+  Value::NumberList(Rc::new(v.iter().map(|n| rust_decimal::Decimal::from(*n)).collect()))
+}
+
+fn obj(fields: Vec<(&str, Value)>) -> Value {
+  let mut m = IndexMap::new();
+  for (k, v) in fields {
+    m.insert(SmolStr::new(k), v);
+  }
+  Value::Object(Rc::new(m))
+}
+
+#[test]
+fn test_short_circuit_and_skips_failing_right() {
+  // Right side would blow up (property on Null) if evaluated
+  assert_eq!(
+    run_expr_with_globals("x != null && x.a.b.c > 1", vec![("x", Value::Null)]),
+    Value::Boolean(false)
+  );
+}
+
+#[test]
+fn test_short_circuit_or_skips_failing_right() {
+  assert_eq!(
+    run_expr_with_globals("x == null || x.a.b.c > 1", vec![("x", Value::Null)]),
+    Value::Boolean(true)
+  );
+}
+
+#[test]
+fn test_short_circuit_left_must_be_boolean() {
+  let err = run_expr_err("1 && true", vec![]);
+  assert!(err.contains("Boolean"), "got: {err}");
+  let err = run_expr_err("\"a\" || true", vec![]);
+  assert!(err.contains("Boolean"), "got: {err}");
+}
+
+#[test]
+fn test_short_circuit_right_value_passthrough() {
+  // Right operand's value is the result when left doesn't short-circuit
+  // (JS-like); using it in `if` still type-checks.
+  assert_eq!(run_expr("true && 1"), Value::Number(dec!(1)));
+  let err = run_expr_err("if true && 1 then 1 end", vec![]);
+  assert!(err.contains("Boolean"), "got: {err}");
+}
+
+#[test]
+fn test_short_circuit_register_pressure() {
+  // Deep nesting: exercise register reuse in compile_logical_op
+  let code = "a = 1\nb = 2\nc = 3\n(a < b && b < c && c > a) || (a > b && b > c) || (a == 1 && (b == 2 || c == 9) && !(a > c))";
+  assert_eq!(run_expr(code), Value::Boolean(true));
+}
+
+#[test]
+fn test_short_circuit_side_effect_not_run() {
+  // Host fn records calls; must not be called when short-circuited
+  let ast = parser::program("false && hit() == 1").expect("parse");
+  let mut compiler = Compiler::new();
+  let bytecode = compiler.compile(ast).expect("compile");
+  let mut vm = VM::new(&bytecode);
+  let called = Rc::new(std::cell::Cell::new(false));
+  let c2 = called.clone();
+  vm.register_function("hit", move |_| {
+    c2.set(true);
+    Ok(Value::Number(dec!(1)))
+  });
+  assert_eq!(vm.execute().unwrap(), Value::Boolean(false));
+  assert!(!called.get(), "right side must not run");
+}
+
+#[test]
+fn test_empty_list_aggregates() {
+  let el = Value::List(Rc::new(vec![]));
+  assert_eq!(run_expr_with_globals("l.sum()", vec![("l", el.clone())]), Value::Number(dec!(0)));
+  assert_eq!(run_expr_with_globals("l.avg()", vec![("l", el.clone())]), Value::Null);
+  assert_eq!(run_expr_with_globals("l.min()", vec![("l", el.clone())]), Value::Null);
+  assert_eq!(run_expr_with_globals("l.max()", vec![("l", el)]), Value::Null);
+}
+
+#[test]
+fn test_empty_projection_sum() {
+  // items.amount on an empty items list must still sum to 0
+  let items = Value::List(Rc::new(vec![]));
+  assert_eq!(
+    run_expr_with_globals("items.amount.sum()", vec![("items", items.clone())]),
+    Value::Number(dec!(0))
+  );
+  assert_eq!(
+    run_expr_with_globals("items.amount.length", vec![("items", items)]),
+    Value::Number(dec!(0))
+  );
+}
+
+#[test]
+fn test_numeric_list_aggregates() {
+  let l = Value::List(Rc::new(vec![
+    Value::Number(dec!(4)),
+    Value::Number(dec!(1)),
+    Value::Number(dec!(7)),
+  ]));
+  assert_eq!(run_expr_with_globals("l.sum()", vec![("l", l.clone())]), Value::Number(dec!(12)));
+  assert_eq!(run_expr_with_globals("l.avg()", vec![("l", l.clone())]), Value::Number(dec!(4)));
+  assert_eq!(run_expr_with_globals("l.min()", vec![("l", l.clone())]), Value::Number(dec!(1)));
+  assert_eq!(run_expr_with_globals("l.max()", vec![("l", l)]), Value::Number(dec!(7)));
+}
+
+#[test]
+fn test_mixed_list_aggregate_errors() {
+  let l = Value::List(Rc::new(vec![Value::Number(dec!(1)), Value::String("x".into())]));
+  let err = run_expr_err("l.sum()", vec![("l", l)]);
+  assert!(err.contains("list of numbers"), "got: {err}");
+}
+
+#[test]
+fn test_length_property_on_lists() {
+  assert_eq!(run_expr_with_globals("l.length", vec![("l", num_list(&[1, 2, 3]))]), Value::Number(dec!(3)));
+  let sl = Value::StringList(Rc::new(vec!["a".into()]));
+  assert_eq!(run_expr_with_globals("l.length", vec![("l", sl)]), Value::Number(dec!(1)));
+  let ml = Value::List(Rc::new(vec![Value::Number(dec!(1)), Value::String("x".into())]));
+  assert_eq!(run_expr_with_globals("l.length", vec![("l", ml)]), Value::Number(dec!(2)));
+}
+
+#[test]
+fn test_length_property_projection_on_object_list() {
+  // List of objects with a `length` field → projection, not count
+  let l = Value::List(Rc::new(vec![
+    obj(vec![("length", Value::Number(dec!(10)))]),
+    obj(vec![("length", Value::Number(dec!(20)))]),
+  ]));
+  assert_eq!(run_expr_with_globals("l.length", vec![("l", l.clone())]), num_list(&[10, 20]));
+  assert_eq!(run_expr_with_globals("l.length()", vec![("l", l)]), Value::Number(dec!(2)));
+}

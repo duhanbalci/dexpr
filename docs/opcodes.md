@@ -53,8 +53,8 @@ Bytecode komut setini (instruction set) tanımlar. Her opcode bir `u8` değerine
 
 | Opcode | Değer | Açıklama |
 |--------|-------|----------|
-| `And` | `0x50` | Mantıksal VE |
-| `Or` | `0x51` | Mantıksal VEYA |
+| `And` | `0x50` | Mantıksal VE (compiler artık emit etmiyor; `&&` JumpIfFalse ile derlenir) |
+| `Or` | `0x51` | Mantıksal VEYA (compiler artık emit etmiyor; `\|\|` JumpIfTrue ile derlenir) |
 | `Not` | `0x52` | Mantıksal DEĞİL |
 
 ### Kontrol Akışı
@@ -63,6 +63,7 @@ Bytecode komut setini (instruction set) tanımlar. Her opcode bir `u8` değerine
 |--------|-------|----------|
 | `Jump` | `0x60` | Koşulsuz atlama |
 | `JumpIfFalse` | `0x61` | Register false ise atla |
+| `JumpIfTrue` | `0x62` | Register true ise atla (`\|\|` short-circuit) |
 
 ### Üyelik Testi
 

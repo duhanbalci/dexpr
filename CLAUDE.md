@@ -64,6 +64,10 @@ The dexpr language supports:
 - String methods (e.g., `.upper()`, `.lower()`, `.trim()`, `.trimStart()`, `.trimEnd()`, `.split()`, `.replace()`, `.contains()`, `.startsWith()`, `.endsWith()`, `.length`, `.charAt()`, `.substring()`)
 - Arithmetic (`+`, `-`, `*`, `/`, `%`, `**`), comparison, and logical operators. `==`/`!=` work on all types (structural, different types → `false`); `<`/`<=`/`>`/`>=` work on Number and String (lexicographic)
 - `null` literal (`x == null`)
+- `&&`/`||` short-circuit (`x != null && x.name == "a"` is safe when `x` is null); left-associative, `&&` binds tighter than `||`
+- Unary `-`/`!` bind looser than postfix: `!o.active` == `!(o.active)`, `-2 ** 2` == `-4`
+- `.length` property works on String and lists (same as `.length()`)
+- `round()` uses half-away-from-zero (`round(2.5)` == `3`)
 - `in` operator for membership testing (`"finans" in categories`, `5 in numbers`, `"hello" in "hello world"`, `"key" in obj`)
 - Compound assignments (`+=`, `-=`, `*=`, `/=`, `%=`)
 - Built-in `log()` function for output and `rand(min, max)` for random integers

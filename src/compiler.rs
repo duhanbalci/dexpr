@@ -316,6 +316,10 @@ impl Compiler {
     op: &Op,
     right: &Expr,
   ) -> Result<u8, CompileError> {
+    if matches!(op, Op::And | Op::Or) {
+      return self.compile_logical_op(left, op, right);
+    }
+
     let left_reg = self.compile_expr(left)?;
     let right_reg = self.compile_expr(right)?;
     let result_reg = self.allocate_register()?;
@@ -353,6 +357,49 @@ impl Compiler {
     self.free_register(right_reg);
 
     Ok(result_reg)
+  }
+
+  /// Compile `&&` / `||` with short-circuit evaluation.
+  ///
+  /// Layout (`&&`):
+  /// ```text
+  ///   <left>  -> rL
+  ///   JumpIfFalse rL, END     ; left false → result is rL (false), skip right
+  ///   <right> -> rR
+  ///   Move rL, rR             ; (omitted when rR == rL)
+  /// END:
+  /// ```
+  /// `||` is identical with `JumpIfTrue`. The result always lives in `rL`.
+  /// The left register is released before compiling the right side because its
+  /// value is only needed on the jump path, where nothing else executes; this
+  /// lets the right side usually land in the same register and skip the Move.
+  fn compile_logical_op(&mut self, left: &Expr, op: &Op, right: &Expr) -> Result<u8, CompileError> {
+    let left_reg = self.compile_expr(left)?;
+    let end_label = self.create_label();
+
+    let jump_op = if matches!(op, Op::And) {
+      OpCodeByte::JumpIfFalse
+    } else {
+      OpCodeByte::JumpIfTrue
+    };
+    self.emit_byte(jump_op.to_byte());
+    self.emit_byte(left_reg);
+    self.emit_jump_address(end_label);
+
+    self.free_register(left_reg);
+    let right_reg = self.compile_expr(right)?;
+    if right_reg != left_reg {
+      self.emit_byte(OpCodeByte::Move.to_byte());
+      self.emit_byte(left_reg);
+      self.emit_byte(right_reg);
+      self.free_register(right_reg);
+    }
+    // Re-claim left_reg as the result register (it may have been reused/freed
+    // while compiling the right side).
+    self.used_registers[left_reg as usize] = true;
+
+    self.set_label(end_label);
+    Ok(left_reg)
   }
 
   /// Compile a unary operation

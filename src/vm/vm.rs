@@ -221,6 +221,7 @@ impl<'a> VM<'a> {
         OpCodeByte::Not => self.handle_not(),
         OpCodeByte::Jump => self.handle_jump(),
         OpCodeByte::JumpIfFalse => self.handle_jump_if_false(),
+        OpCodeByte::JumpIfTrue => self.handle_jump_if_true(),
         OpCodeByte::Concat => self.handle_concat(),
         OpCodeByte::GetProperty => self.handle_get_property(),
         OpCodeByte::SetProperty => self.handle_set_property(),
@@ -654,6 +655,32 @@ impl<'a> VM<'a> {
     Ok(())
   }
 
+  /// Handle JumpIfTrue opcode - conditional jump (used for `||` short-circuit)
+  #[inline]
+  fn handle_jump_if_true(&mut self) -> Result<(), VMError> {
+    let cond_reg = self.read_register_checked()?;
+    let addr = self.read_jump_address()?;
+
+    match &self.registers[cond_reg] {
+      Value::Boolean(condition) => {
+        if *condition {
+          self.set_position(addr)?;
+          log_debug!(self, "JumpIfTrue to {} (condition=true)", addr);
+        } else {
+          log_debug!(self, "JumpIfTrue not taken (condition=false)");
+        }
+      }
+      v => {
+        return Err(VMError::TypeMismatch {
+          expected: "Boolean".to_string(),
+          got: v.type_name().to_string(),
+        });
+      }
+    }
+
+    Ok(())
+  }
+
   // ============================================================================
   // Opcode Handlers - String Operations
   // ============================================================================
@@ -686,6 +713,22 @@ impl<'a> VM<'a> {
       Value::Object(map) => {
         let value = map.get(prop).cloned().unwrap_or(Value::Null);
         self.registers[dest] = value;
+      }
+      // `.length` as a property (sugar for `.length()`) on strings and lists.
+      Value::String(s) if prop == "length" => {
+        self.registers[dest] = Value::Number(Decimal::from(s.chars().count()));
+      }
+      Value::NumberList(list) if prop == "length" => {
+        self.registers[dest] = Value::Number(Decimal::from(list.len()));
+      }
+      Value::StringList(list) if prop == "length" => {
+        self.registers[dest] = Value::Number(Decimal::from(list.len()));
+      }
+      Value::List(list)
+        if prop == "length" && !matches!(list.first(), Some(Value::Object(_))) =>
+      {
+        // Only when this can't be a projection of an Object field named "length"
+        self.registers[dest] = Value::Number(Decimal::from(list.len()));
       }
       Value::List(list) => {
         // Property projection: list.field → extract field from each Object element

@@ -83,6 +83,7 @@ pub enum OpCodeByte {
   // Control flow
   Jump = 0x60,        // Should read 4-byte address
   JumpIfFalse = 0x61, // Should read register + 4-byte address
+  JumpIfTrue = 0x62,  // Should read register + 4-byte address
 
   // String operations
   Concat = 0x80, // String concatenation
@@ -142,6 +143,7 @@ impl OpCodeByte {
         0x53 => Some(OpCodeByte::Contains),
         0x60 => Some(OpCodeByte::Jump),
         0x61 => Some(OpCodeByte::JumpIfFalse),
+        0x62 => Some(OpCodeByte::JumpIfTrue),
         0x80 => Some(OpCodeByte::Concat),
         0x90 => Some(OpCodeByte::MethodCall),
         0x91 => Some(OpCodeByte::GetProperty),
@@ -193,6 +195,7 @@ impl OpCodeByte {
       OpCodeByte::Contains => "Contains",
       OpCodeByte::Jump => "Jump",
       OpCodeByte::JumpIfFalse => "JumpIfFalse",
+      OpCodeByte::JumpIfTrue => "JumpIfTrue",
       OpCodeByte::Concat => "Concat",
       OpCodeByte::MethodCall => "MethodCall",
       OpCodeByte::GetProperty => "GetProperty",

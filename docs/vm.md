@@ -134,18 +134,19 @@ struct VM<'a> {
 
 ### Kontrol Akışı
 - **`handle_jump()`** — 4-byte adres oku, reader pozisyonunu ayarla
+- **`handle_jump_if_true()`** — `||` short-circuit için; register true ise atla, Boolean değilse `TypeMismatch`
 - **`handle_jump_if_false()`** — Register `Boolean(false)` ise atla
 
 ### String, Nesne ve Metodlar
 - **`handle_concat()`** — İki register'ı birleştir (karışık tip dönüşümü destekler: String, Number, Boolean otomatik olarak String'e dönüştürülür)
-- **`handle_get_property()`** — Object register'ından alan oku, alan yoksa `Null` döndür. List register'ında property projection yapar: her Object elemanından ilgili alanı çıkarıp NumberList/StringList/List döndürür
+- **`handle_get_property()`** — Object register'ından alan oku, alan yoksa `Null` döndür. List register'ında property projection yapar: her Object elemanından ilgili alanı çıkarıp NumberList/StringList/List döndürür. `.length` property'si String/NumberList/StringList'te ve elemanları Object olmayan List'te `.length()` ile eşdeğerdir (Object listesinde `length` alanı projection'ı önceliklidir)
 - **`handle_set_property()`** — Object register'ında alan değerini ayarla
 - **`handle_method_call()`** — Nesne register'ı, metod adı, argümanlar
   - **String metodları:** `upper`, `lower`, `trim`, `trimStart`, `trimEnd`, `split(delimiter)`, `replace(old, new)`, `startsWith(prefix)`, `endsWith(suffix)`, `contains(substr)`, `length`, `charAt(index)`, `substring(start, end?)`
   - **StringList metodları:** `length`/`len`, `isEmpty`, `first`, `last`, `get(index)`, `contains(value)`, `indexOf(value)`, `slice(start, end?)`, `reverse()`, `sort()`, `join(delimiter?)`
   - **NumberList metodları:** `length`/`len`, `isEmpty`, `first`, `last`, `get(index)`, `contains(value)`, `indexOf(value)`, `slice(start, end?)`, `reverse()`, `sort()`, `sum`, `avg`, `min`, `max`
   - **Object metodları:** `keys()`, `values()`, `length`/`len()`, `contains(key)`, `get(key)`
-  - **List metodları:** `length`/`len`, `isEmpty`, `first`, `last`, `get(index)`, `contains(value)`, `indexOf(value)`, `slice(start, end?)`, `reverse()`, `join(delim?)`, `map(field)`, `filter(field, value?)`, `find(field, value?)`, `sort(field)`
+  - **List metodları:** `length`/`len`, `isEmpty`, `first`, `last`, `get(index)`, `contains(value)`, `indexOf(value)`, `slice(start, end?)`, `reverse()`, `join(delim?)`, `map(field)`, `filter(field, value?)`, `find(field, value?)`, `sort(field)`, `sum`/`avg`/`min`/`max` (elemanların hepsi Number ise; boş liste → sum 0, diğerleri null. Boş projection `items.amount` List döndürdüğü için gerekli)
   - **Harici metodlar:** Yukarıdaki built-in metodlar bulunamazsa `external_methods` HashMap'inde aranır
 
 ### Üyelik Testi
@@ -163,7 +164,7 @@ struct VM<'a> {
 - **`max(a, b, ...)`** — Verilen değerlerin maksimumu
 - **`floor(n)`** — Aşağı yuvarlama
 - **`ceil(n)`** — Yukarı yuvarlama
-- **`round(n[, places])`** — Yuvarlama (opsiyonel ondalık basamak sayısı)
+- **`round(n[, places])`** — Yuvarlama (opsiyonel ondalık basamak sayısı). Yarımlar sıfırdan uzağa (`MidpointAwayFromZero`): `round(2.5)` = 3, `round(-2.5)` = -3, `round(0.125, 2)` = 0.13
 - **`sqrt(n)`** — Karekök
 - **`len(v)`** — Değerin uzunluğu (String, List, Object)
 - **`toString(v)`** — Değeri String'e dönüştür

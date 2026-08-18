@@ -45,14 +45,17 @@ Byte offset'ini 1-indexed satır ve sütuna dönüştürür. UTF-8 karakter sın
 
 En düşükten en yükseğe:
 
-1. Method çağrıları, fonksiyon çağrıları
-2. Mantıksal AND (`&&`)
-3. Mantıksal OR (`||`)
-4. Karşılaştırma (`==`, `!=`, `<`, `<=`, `>`, `>=`, `in`)
-5. Toplama/Çıkarma (`+`, `-`)
-6. Çarpma/Bölme/Mod (`*`, `/`, `%`)
-7. Üs alma (`**`) - sağdan birleşimli (right-associative)
-8. Tekli operatörler (`-`, `!`), atomik ifadeler
+1. Fonksiyon çağrıları
+2. Mantıksal OR (`||`) — soldan birleşimli
+3. Mantıksal AND (`&&`) — soldan birleşimli (`a && b || c` = `(a && b) || c`)
+4. Karşılaştırma (`==`, `!=`, `<`, `<=`, `>`, `>=`, `in`) — soldan birleşimli
+5. Toplama/Çıkarma (`+`, `-`) — soldan birleşimli (`10 - 3 - 2` = `5`)
+6. Çarpma/Bölme/Mod (`*`, `/`, `%`) — soldan birleşimli
+7. Tekli operatörler (`-`, `!`) — `unary()` kuralı; postfix ve `**`'dan gevşek bağlanır: `!o.active` = `!(o.active)`, `-2 ** 2` = `-(2 ** 2)`, `- -1` geçerli
+8. Üs alma (`**`) — sağdan birleşimli, üs kısmı `unary()` (`2 ** -1` geçerli)
+9. Postfix (`.prop`, `.method()`), atomik ifadeler
+
+`&&` ve `||` VM'de kısa devre (short-circuit) çalışır; sağ taraf sadece gerektiğinde değerlendirilir (bkz. compiler.md).
 
 ### Postfix Kuralı
 

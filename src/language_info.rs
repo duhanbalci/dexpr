@@ -305,6 +305,10 @@ fn builtin_methods() -> Vec<(&'static str, Vec<MethodInfo>)> {
             MethodInfo { name: "filter", signature: "(field: String, value?: any) -> List", doc: Some("Filter by field value or truthy field") },
             MethodInfo { name: "find", signature: "(field: String, value?: any) -> any", doc: Some("Find first element matching field condition") },
             MethodInfo { name: "sort", signature: "(field: String) -> List", doc: Some("Sort by field value") },
+            MethodInfo { name: "sum", signature: "() -> Number", doc: Some("Sum of numeric elements (0 when empty)") },
+            MethodInfo { name: "avg", signature: "() -> Number", doc: Some("Average of numeric elements") },
+            MethodInfo { name: "min", signature: "() -> Number", doc: Some("Smallest numeric element") },
+            MethodInfo { name: "max", signature: "() -> Number", doc: Some("Largest numeric element") },
         ]),
         ("StringList", vec![
             MethodInfo { name: "length", signature: "() -> Number", doc: None },

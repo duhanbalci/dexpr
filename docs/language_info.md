@@ -62,7 +62,7 @@ Tüm built-in fonksiyon ve metodları içeren yeni bir `LanguageInfo` oluşturur
 | `NumberList` | `length`, `len`, `isEmpty`, `first`, `last`, `get`, `contains`, `indexOf`, `slice`, `reverse`, `sort`, `sum`, `avg`, `min`, `max` |
 | `StringList` | `length`, `len`, `isEmpty`, `first`, `last`, `get`, `contains`, `indexOf`, `slice`, `reverse`, `sort`, `join` |
 | `Object` | `keys`, `values`, `length`, `len`, `contains`, `get` |
-| `List` | `length`, `len`, `isEmpty`, `first`, `last`, `get`, `contains`, `indexOf`, `slice`, `reverse`, `join`, `map`, `filter`, `find`, `sort` |
+| `List` | `length`, `len`, `isEmpty`, `first`, `last`, `get`, `contains`, `indexOf`, `slice`, `reverse`, `join`, `map`, `filter`, `find`, `sort`, `sum`, `avg`, `min`, `max` |
 
 ### `add_function(name, signature, doc)`
 

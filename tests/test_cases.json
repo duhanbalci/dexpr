@@ -1458,5 +1458,326 @@
       "o": {"type": "object", "value": {"name": "ali"}}
     },
     "expected": { "type": "boolean", "value": true }
+  },
+
+  {
+    "name": "unary: not on property",
+    "code": "!o.active",
+    "globals": {
+      "o": {"type": "object", "value": {"active": false}}
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "unary: not on method call",
+    "code": "!o.keys().isEmpty()",
+    "globals": {
+      "o": {"type": "object", "value": {"a": "1"}}
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "unary: neg on property",
+    "code": "-o.age",
+    "globals": {
+      "o": {"type": "object", "value": {"age": "30"}}
+    },
+    "expected": { "type": "number", "value": "-30" }
+  },
+  {
+    "name": "unary: neg on method call",
+    "code": "-\"5\".length()",
+    "expected": { "type": "number", "value": "-1" }
+  },
+  {
+    "name": "unary: double neg",
+    "code": "- -1",
+    "expected": { "type": "number", "value": "1" }
+  },
+  {
+    "name": "unary: double not",
+    "code": "!!true",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "unary: neg binds looser than power",
+    "code": "-2 ** 2",
+    "expected": { "type": "number", "value": "-4" }
+  },
+  {
+    "name": "unary: neg exponent",
+    "code": "2 ** -1",
+    "expected": { "type": "number", "value": "0.5" }
+  },
+  {
+    "name": "unary: neg in arithmetic",
+    "code": "3 - -2",
+    "expected": { "type": "number", "value": "5" }
+  },
+  {
+    "name": "unary: neg times",
+    "code": "-2 * 3",
+    "expected": { "type": "number", "value": "-6" }
+  },
+  {
+    "name": "unary: not with and",
+    "code": "!false && true",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "unary: not with comparison",
+    "code": "!(1 > 2)",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "unary: not on property in if",
+    "code": "if !o.iptal then \"ok\" else \"iptal\" end",
+    "globals": {
+      "o": {"type": "object", "value": {"iptal": false}}
+    },
+    "expected": { "type": "string", "value": "ok" }
+  },
+  {
+    "name": "short-circuit: and skips right when left false",
+    "code": "x != null && x.name == \"a\"",
+    "globals": {
+      "x": {"type": "null"}
+    },
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "short-circuit: and evaluates right when left true",
+    "code": "x != null && x.name == \"a\"",
+    "globals": {
+      "x": {"type": "object", "value": {"name": "a"}}
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "short-circuit: or skips right when left true",
+    "code": "x == null || x.name == \"a\"",
+    "globals": {
+      "x": {"type": "null"}
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "short-circuit: or evaluates right when left false",
+    "code": "x == null || x.name == \"a\"",
+    "globals": {
+      "x": {"type": "object", "value": {"name": "b"}}
+    },
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "short-circuit: and true true",
+    "code": "true && true",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "short-circuit: and true false",
+    "code": "true && false",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "short-circuit: or false false",
+    "code": "false || false",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "short-circuit: or false true",
+    "code": "false || true",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "short-circuit: chained and",
+    "code": "true && true && false",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "short-circuit: chained or",
+    "code": "false || false || true",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "short-circuit: mixed precedence",
+    "code": "true || false && false",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "short-circuit: mixed precedence 2",
+    "code": "false && true || true",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "short-circuit: nested with comparisons",
+    "code": "a > 1 && (b < 5 || c == 3)",
+    "globals": {
+      "a": {"type": "number", "value": "2"},
+      "b": {"type": "number", "value": "9"},
+      "c": {"type": "number", "value": "3"}
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "short-circuit: result assigned",
+    "code": "r = x != null && x.v > 1\nr",
+    "globals": {
+      "x": {"type": "null"}
+    },
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "short-circuit: in if condition",
+    "code": "if x != null && x.v > 1 then 1 else 2 end",
+    "globals": {
+      "x": {"type": "null"}
+    },
+    "expected": { "type": "number", "value": "2" }
+  },
+  {
+    "name": "short-circuit: skips method on null",
+    "code": "x != null && x.upper() == \"A\"",
+    "globals": {
+      "x": {"type": "null"}
+    },
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "short-circuit: right side complex",
+    "code": "1 == 1 && (2 + 3) * 2 == 10",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "short-circuit: left side complex",
+    "code": "(2 + 3) * 2 == 10 && 1 == 1",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "short-circuit: string concat after",
+    "code": "(true && false) + \"\"",
+    "expected": { "type": "string", "value": "false" }
+  },
+  {
+    "name": "round: half away from zero 2.5",
+    "code": "round(2.5)",
+    "expected": { "type": "number", "value": "3" }
+  },
+  {
+    "name": "round: half away from zero 1.5",
+    "code": "round(1.5)",
+    "expected": { "type": "number", "value": "2" }
+  },
+  {
+    "name": "round: half away from zero 0.5",
+    "code": "round(0.5)",
+    "expected": { "type": "number", "value": "1" }
+  },
+  {
+    "name": "round: negative half",
+    "code": "round(-2.5)",
+    "expected": { "type": "number", "value": "-3" }
+  },
+  {
+    "name": "round: dp half",
+    "code": "round(0.125, 2)",
+    "expected": { "type": "number", "value": "0.13" }
+  },
+  {
+    "name": "round: dp",
+    "code": "round(1.234, 2)",
+    "expected": { "type": "number", "value": "1.23" }
+  },
+  {
+    "name": "round: dp up",
+    "code": "round(1.235, 2)",
+    "expected": { "type": "number", "value": "1.24" }
+  },
+  {
+    "name": "length prop: string",
+    "code": "\"hello\".length",
+    "expected": { "type": "number", "value": "5" }
+  },
+  {
+    "name": "length prop: unicode string",
+    "code": "\"üşi\".length",
+    "expected": { "type": "number", "value": "3" }
+  },
+  {
+    "name": "length method: unicode string",
+    "code": "\"üşi\".length()",
+    "expected": { "type": "number", "value": "3" }
+  },
+  {
+    "name": "length prop: string global",
+    "code": "s.length",
+    "globals": {
+      "s": {"type": "string", "value": "Hello World"}
+    },
+    "expected": { "type": "number", "value": "11" }
+  },
+  {
+    "name": "length prop: string in expression",
+    "code": "s.length > 5",
+    "globals": {
+      "s": {"type": "string", "value": "Hello World"}
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "length prop: object field named length still works",
+    "code": "o.length",
+    "globals": {
+      "o": {"type": "object", "value": {"length": "7"}}
+    },
+    "expected": { "type": "number", "value": "7" }
+  },
+  {
+    "name": "length prop: object field string",
+    "code": "o.name.length",
+    "globals": {
+      "o": {"type": "object", "value": {"name": "ali"}}
+    },
+    "expected": { "type": "number", "value": "3" }
+  },
+  {
+    "name": "assoc: and binds tighter than or",
+    "code": "false && true || true",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "assoc: and binds tighter than or 2",
+    "code": "true || true && false",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "assoc: or chain left",
+    "code": "false || false || true && false",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "assoc: equality left assoc",
+    "code": "1 == 1 == true",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "assoc: subtraction left assoc",
+    "code": "10 - 3 - 2",
+    "expected": { "type": "number", "value": "5" }
+  },
+  {
+    "name": "assoc: add sub mixed",
+    "code": "10 - 3 + 2",
+    "expected": { "type": "number", "value": "9" }
+  },
+  {
+    "name": "assoc: comparison then and",
+    "code": "1 < 2 && 3 >= 3 && \"a\" != \"b\"",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "assoc: in with and",
+    "code": "\"a\" in \"abc\" && \"z\" in \"abc\" == false",
+    "expected": { "type": "boolean", "value": true }
   }
 ]

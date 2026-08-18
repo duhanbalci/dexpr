@@ -1,6 +1,6 @@
 use crate::ast::value::Value;
 use crate::opcodes::default_fn;
-use rust_decimal::{prelude::ToPrimitive, Decimal, MathematicalOps};
+use rust_decimal::{prelude::ToPrimitive, Decimal, MathematicalOps, RoundingStrategy};
 
 use super::error::VMError;
 use super::vm::VM;
@@ -134,7 +134,10 @@ impl<'a> VM<'a> {
     } else {
       0
     };
-    self.registers[dest] = Value::Number(n.round_dp(places));
+    // Half away from zero (2.5 → 3, -2.5 → -3), not banker's rounding.
+    self.registers[dest] = Value::Number(
+      n.round_dp_with_strategy(places, RoundingStrategy::MidpointAwayFromZero),
+    );
     Ok(())
   }
 

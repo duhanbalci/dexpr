@@ -135,7 +135,7 @@ impl<'a> VM<'a> {
           )),
         }
       }
-      "length" => Ok(Value::Number(Decimal::from(s.len()))),
+      "length" => Ok(Value::Number(Decimal::from(s.chars().count()))),
       "charAt" => {
         if args.is_empty() {
           return Err(VMError::RuntimeError(
@@ -731,6 +731,37 @@ impl<'a> VM<'a> {
             Ok(Value::List(Rc::new(sorted)))
           }
           _ => Err(VMError::RuntimeError("sort() requires a string field name".to_string())),
+        }
+      }
+      // Numeric aggregates: a List holding only Numbers behaves like a
+      // NumberList (an empty projection like `items.amount` yields an empty
+      // List, so `items.amount.sum()` must still work).
+      "sum" | "avg" | "min" | "max" => {
+        let mut nums: Vec<Decimal> = Vec::with_capacity(list.len());
+        for item in list.iter() {
+          match item {
+            Value::Number(n) => nums.push(*n),
+            other => {
+              return Err(VMError::RuntimeError(format!(
+                "{}() requires a list of numbers, found {}",
+                method,
+                other.type_name()
+              )));
+            }
+          }
+        }
+        match method {
+          "sum" => Ok(Value::Number(nums.iter().sum())),
+          "avg" => {
+            if nums.is_empty() {
+              Ok(Value::Null)
+            } else {
+              let sum: Decimal = nums.iter().sum();
+              Ok(Value::Number(sum / Decimal::from(nums.len())))
+            }
+          }
+          "min" => Ok(nums.iter().min().map(|n| Value::Number(*n)).unwrap_or(Value::Null)),
+          _ => Ok(nums.iter().max().map(|n| Value::Number(*n)).unwrap_or(Value::Null)),
         }
       }
       _ => {

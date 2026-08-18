@@ -41,8 +41,8 @@ pub grammar parser() for str {
     = binary_op()
 
   pub rule mul_div() -> Expr =
-    left:power() mul_div_right:(
-        _ op:$("*" / "/" / "%") _ right:power()
+    left:unary() mul_div_right:(
+        _ op:$("*" / "/" / "%") _ right:unary()
         { (op, right) }
     )* {
         let mut result = left;
@@ -57,31 +57,39 @@ pub grammar parser() for str {
         result
     }
 
+  /// Unary operators bind looser than postfix (`.prop`, `.method()`) and `**`,
+  /// so `!o.active` == `!(o.active)` and `-2 ** 2` == `-(2 ** 2)`.
+  pub rule unary() -> Expr
+    = "-" _ e:unary() { Expr::UnaryOp(Op::Neg, Box::new(e)) }
+    / "!" _ e:unary() { Expr::UnaryOp(Op::Not, Box::new(e)) }
+    / power()
+
   pub rule power() -> Expr =
-    base:postfix() _ "**" _ exp:power() { Expr::BinaryOp(Box::new(base), Op::Pow, Box::new(exp)) }
+    base:postfix() _ "**" _ exp:unary() { Expr::BinaryOp(Box::new(base), Op::Pow, Box::new(exp)) }
     / a:postfix() { a }
 
 
   pub rule binary_op() -> Expr = precedence!{
     i:identifier() _ "(" args:((_ e:expression() _ {e}) ** ",") ")" { Expr::FunctionCall(i, args) }
     --
-    x:@ _ "&&" _ y:(@) { Expr::BinaryOp(Box::new(x), Op::And, Box::new(y)) }
-    x:@ _ "||" _ y:(@) { Expr::BinaryOp(Box::new(x), Op::Or, Box::new(y)) }
+    x:(@) _ "||" _ y:@ { Expr::BinaryOp(Box::new(x), Op::Or, Box::new(y)) }
     --
-    x:@ _ "==" _ y:(@) { Expr::BinaryOp(Box::new(x), Op::Eq, Box::new(y)) }
-    x:@ _ "!=" _ y:(@) { Expr::BinaryOp(Box::new(x), Op::Neq, Box::new(y)) }
-    x:@ _ "<"  _ y:(@) { Expr::BinaryOp(Box::new(x), Op::Lt, Box::new(y)) }
-    x:@ _ "<=" _ y:(@) { Expr::BinaryOp(Box::new(x), Op::Lte, Box::new(y)) }
-    x:@ _ ">"  _ y:(@) { Expr::BinaryOp(Box::new(x), Op::Gt, Box::new(y)) }
-    x:@ _ ">=" _ y:(@) { Expr::BinaryOp(Box::new(x), Op::Gte, Box::new(y)) }
-    x:@ _ "in" _ y:(@) { Expr::BinaryOp(Box::new(x), Op::In, Box::new(y)) }
+    x:(@) _ "&&" _ y:@ { Expr::BinaryOp(Box::new(x), Op::And, Box::new(y)) }
     --
-    x:@ _ "+" _ y:(@) { Expr::BinaryOp(Box::new(x),Op::Add, Box::new(y)) }
-    x:@ _ "-" _ y:(@) { Expr::BinaryOp(Box::new(x),Op::Sub, Box::new(y)) }
+    x:(@) _ "==" _ y:@ { Expr::BinaryOp(Box::new(x), Op::Eq, Box::new(y)) }
+    x:(@) _ "!=" _ y:@ { Expr::BinaryOp(Box::new(x), Op::Neq, Box::new(y)) }
+    x:(@) _ "<=" _ y:@ { Expr::BinaryOp(Box::new(x), Op::Lte, Box::new(y)) }
+    x:(@) _ ">=" _ y:@ { Expr::BinaryOp(Box::new(x), Op::Gte, Box::new(y)) }
+    x:(@) _ "<"  _ y:@ { Expr::BinaryOp(Box::new(x), Op::Lt, Box::new(y)) }
+    x:(@) _ ">"  _ y:@ { Expr::BinaryOp(Box::new(x), Op::Gt, Box::new(y)) }
+    x:(@) _ "in" _ y:@ { Expr::BinaryOp(Box::new(x), Op::In, Box::new(y)) }
+    --
+    x:(@) _ "+" _ y:@ { Expr::BinaryOp(Box::new(x),Op::Add, Box::new(y)) }
+    x:(@) _ "-" _ y:@ { Expr::BinaryOp(Box::new(x),Op::Sub, Box::new(y)) }
     --
     x:mul_div() { x }
     --
-    p:postfix() { p }
+    p:unary() { p }
   }
 
   /// Postfix operations: property access and method calls with chaining
@@ -107,8 +115,6 @@ pub grammar parser() for str {
     / i:number() { Expr::Value(Value::Number(i)) }
     / i:boolean_literal() { Expr::Value(i) }
     / "(" e:expression() ")" { e }
-    / "-" e:atom() { Expr::UnaryOp(Op::Neg, Box::new(e)) }
-    / "!" e:atom() { Expr::UnaryOp(Op::Not, Box::new(e)) }
 
   pub rule string() -> SmolStr
     = "\"" s:$(([^'"'] / "\\\"")*) "\"" {
@@ -197,40 +203,63 @@ mod tests {
 
   #[test]
   fn test_binary_op() {
-    let res = parser::binary_op("1 + 2 * 3 - 4 / 5");
-    if let Err(e) = &res {
-      println!("{}", e);
-    }
-    if let Ok(expr) = res {
-      match expr {
-        Expr::BinaryOp(left, Op::Add, right) => {
-          assert!(matches!(*left, Expr::Value(_)));
-          match *right {
-            Expr::BinaryOp(left2, Op::Sub, right2) => {
-              // Check 2 * 3
-              match *left2 {
-                Expr::BinaryOp(left3, Op::Mul, right3) => {
-                  assert!(matches!(*left3, Expr::Value(_)));
-                  assert!(matches!(*right3, Expr::Value(_)));
-                }
-                _ => panic!("Expected multiplication"),
-              }
-              // Check 4 / 5
-              match *right2 {
-                Expr::BinaryOp(left3, Op::Div, right3) => {
-                  assert!(matches!(*left3, Expr::Value(_)));
-                  assert!(matches!(*right3, Expr::Value(_)));
-                }
-                _ => panic!("Expected division"),
-              }
-            }
-            _ => panic!("Expected subtraction"),
+    // Left-associative: ((1 + (2 * 3)) - (4 / 5))
+    let expr = parser::binary_op("1 + 2 * 3 - 4 / 5").expect("Failed to parse expression");
+    match expr {
+      Expr::BinaryOp(left, Op::Sub, right) => {
+        // right: 4 / 5
+        match *right {
+          Expr::BinaryOp(l, Op::Div, r) => {
+            assert!(matches!(*l, Expr::Value(_)));
+            assert!(matches!(*r, Expr::Value(_)));
           }
+          _ => panic!("Expected division"),
         }
-        _ => panic!("Expected addition at top level"),
+        // left: 1 + (2 * 3)
+        match *left {
+          Expr::BinaryOp(l, Op::Add, r) => {
+            assert!(matches!(*l, Expr::Value(_)));
+            match *r {
+              Expr::BinaryOp(l2, Op::Mul, r2) => {
+                assert!(matches!(*l2, Expr::Value(_)));
+                assert!(matches!(*r2, Expr::Value(_)));
+              }
+              _ => panic!("Expected multiplication"),
+            }
+          }
+          _ => panic!("Expected addition"),
+        }
       }
-    } else {
-      panic!("Failed to parse expression");
+      _ => panic!("Expected subtraction at top level"),
+    }
+  }
+
+  #[test]
+  fn test_left_associativity() {
+    // 10 - 3 - 2  =>  (10 - 3) - 2
+    match parser::binary_op("10 - 3 - 2").unwrap() {
+      Expr::BinaryOp(left, Op::Sub, right) => {
+        assert!(matches!(*right, Expr::Value(_)));
+        assert!(matches!(*left, Expr::BinaryOp(_, Op::Sub, _)));
+      }
+      _ => panic!("Expected subtraction at top level"),
+    }
+    // a && b || c  =>  (a && b) || c
+    match parser::binary_op("true && false || true").unwrap() {
+      Expr::BinaryOp(left, Op::Or, _) => {
+        assert!(matches!(*left, Expr::BinaryOp(_, Op::And, _)));
+      }
+      _ => panic!("Expected || at top level"),
+    }
+    // !o.a  =>  !(o.a)
+    match parser::binary_op("!o.a").unwrap() {
+      Expr::UnaryOp(Op::Not, inner) => assert!(matches!(*inner, Expr::PropertyAccess(_, _))),
+      _ => panic!("Expected unary not at top level"),
+    }
+    // -2 ** 2  =>  -(2 ** 2)
+    match parser::binary_op("-2 ** 2").unwrap() {
+      Expr::UnaryOp(Op::Neg, inner) => assert!(matches!(*inner, Expr::BinaryOp(_, Op::Pow, _))),
+      _ => panic!("Expected unary neg at top level"),
     }
   }
 

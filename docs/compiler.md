@@ -69,6 +69,20 @@ Parse ile birlikte pozisyon bilgisi de toplar ve `DebugInfo` üretir.
 1. İfadeyi register'a derle
 2. `StoreGlobal` emit et (tüm değişkenler global)
 
+### Mantıksal Operatörler (`&&`, `\|\|`) — Short-Circuit
+
+`compile_logical_op()`; `And`/`Or` opcode'u yerine atlama ile derlenir, sağ taraf gerekmedikçe çalışmaz (`x != null && x.name == "a"` x null iken hata vermez):
+
+```
+  <left>  -> rL
+  JumpIfFalse rL, END        (|| için JumpIfTrue)
+  <right> -> rR
+  Move rL, rR                (rR == rL ise atlanır)
+END:                          sonuç rL'de
+```
+
+Sol register sağ taraf derlenmeden önce serbest bırakılır (değeri sadece atlama yolunda lazım), böylece sağ taraf çoğunlukla aynı register'a düşer ve `Move` gerekmez. Sol operand Boolean olmak zorundadır (JumpIf* tip kontrolü yapar); sağ operandın değeri sonuç olarak geçer (`true && 1` → `1`).
+
 ### If Statement (Koşullu Deyim)
 
 ```

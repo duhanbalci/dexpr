@@ -119,6 +119,14 @@ pub fn disassemble_bytecode(bytecode: &[u8]) -> Vec<String> {
           _ => format!("{:04x}: JumpIfFalse (truncated)", start_position),
         }
       }
+      OpCodeByte::JumpIfTrue => {
+        let reg = reader.read_byte();
+        let addr = reader.read_u32();
+        match (reg, addr) {
+          (Ok(r), Ok(a)) => format!("{:04x}: JumpIfTrue r{} -> 0x{:04x}", start_position, r, a),
+          _ => format!("{:04x}: JumpIfTrue (truncated)", start_position),
+        }
+      }
       OpCodeByte::MethodCall => {
         let res = reader.read_byte();
         let obj = reader.read_byte();
