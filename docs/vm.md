@@ -126,7 +126,8 @@ struct VM<'a> {
 - **`handle_neg()`** — Sadece Number tipinde tekli negatif
 
 ### Karşılaştırma
-- **`compare_op(f, name)`** — Decimal değerler üzerinde karşılaştırma, Boolean döndürür
+- **`equality_op(negate)`** — `==` / `!=`. Her tip için çalışır, `Value`'nun `PartialEq`'i ile yapısal eşitlik (list, object dahil derin karşılaştırma). Farklı tipler hata vermez, `false` döner (`"1" == 1` → `false`, `x == null` → `x` Null ise `true`)
+- **`compare_op(f, name)`** — `<`, `<=`, `>`, `>=`. Number/Number ve String/String (lexicographic byte sırası) destekler; diğer kombinasyonlar `InvalidOperation` hatası
 
 ### Boolean
 - **`handle_and()`**, **`handle_or()`**, **`handle_not()`** — Boolean register'lar üzerinde mantık operasyonları

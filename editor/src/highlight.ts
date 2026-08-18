@@ -5,6 +5,7 @@ import type { Extension } from "@codemirror/state";
 export const dexprHighlightStyle = HighlightStyle.define([
   { tag: tags.keyword, color: "#7c3aed" },
   { tag: tags.bool, color: "#d97706" },
+  { tag: tags.null, color: "#d97706" },
   { tag: tags.string, color: "#059669" },
   { tag: tags.number, color: "#2563eb" },
   { tag: tags.lineComment, color: "#9ca3af", fontStyle: "italic" },

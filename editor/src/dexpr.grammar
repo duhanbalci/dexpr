@@ -43,6 +43,7 @@ expression[@isGroup=Expression] {
   Number |
   String |
   BooleanLiteral |
+  NullLiteral |
   ParenExpression |
   UnaryExpression |
   BinaryExpression |
@@ -90,6 +91,8 @@ VariableName { identifier }
 kw<term> { @extend[@name={term}]<identifier, term> }
 
 BooleanLiteral { @extend[@name=BooleanLiteral]<identifier, "true" | "false"> }
+
+NullLiteral { @extend[@name=NullLiteral]<identifier, "null"> }
 
 @tokens {
   space { $[ \t\n\r]+ }

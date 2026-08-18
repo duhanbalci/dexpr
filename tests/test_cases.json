@@ -1284,5 +1284,179 @@
       "maxPrice": { "type": "number", "value": "200" }
     },
     "expected": { "type": "number", "value": "200" }
+  },
+
+  {
+    "name": "compare: string equality",
+    "code": "\"a\" == \"a\"",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: string inequality",
+    "code": "\"a\" == \"b\"",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "compare: string not equal",
+    "code": "\"a\" != \"b\"",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: string case sensitive",
+    "code": "\"A\" == \"a\"",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "compare: string less than",
+    "code": "\"a\" < \"b\"",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: string greater than",
+    "code": "\"b\" > \"a\"",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: string lte equal",
+    "code": "\"a\" <= \"a\"",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: string gte",
+    "code": "\"abc\" >= \"abd\"",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "compare: string prefix ordering",
+    "code": "\"ab\" < \"abc\"",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: boolean equality",
+    "code": "true == true",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: boolean inequality",
+    "code": "true == false",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "compare: boolean not equal",
+    "code": "true != false",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: null literal",
+    "code": "null",
+    "expected": { "type": "null" }
+  },
+  {
+    "name": "compare: null == null",
+    "code": "null == null",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: null != null",
+    "code": "null != null",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "compare: number == null is false",
+    "code": "1 == null",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "compare: number != null",
+    "code": "1 != null",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: string == number is false",
+    "code": "\"1\" == 1",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "compare: string != number",
+    "code": "\"1\" != 1",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: boolean == number is false",
+    "code": "true == 1",
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "compare: number equality still works",
+    "code": "1 == 1",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: number decimal equality",
+    "code": "1.0 == 1",
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: string eq in if",
+    "code": "x = \"ok\"\nif x == \"ok\" then 1 else 2 end",
+    "expected": { "type": "number", "value": "1" }
+  },
+  {
+    "name": "compare: string in condition with globals",
+    "code": "if status == \"active\" then \"yes\" else \"no\" end",
+    "globals": {
+      "status": {"type": "string", "value": "active"}
+    },
+    "expected": { "type": "string", "value": "yes" }
+  },
+  {
+    "name": "compare: null global",
+    "code": "x == null",
+    "globals": {
+      "x": {"type": "null"}
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: non-null global vs null",
+    "code": "x == null",
+    "globals": {
+      "x": {"type": "number", "value": "5"}
+    },
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "compare: object equality",
+    "code": "a == b",
+    "globals": {
+      "a": {"type": "object", "value": {"k": "1"}},
+      "b": {"type": "object", "value": {"k": "1"}}
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: object inequality",
+    "code": "a == b",
+    "globals": {
+      "a": {"type": "object", "value": {"k": "1"}},
+      "b": {"type": "object", "value": {"k": "2"}}
+    },
+    "expected": { "type": "boolean", "value": false }
+  },
+  {
+    "name": "compare: object field string eq",
+    "code": "o.name == \"ali\"",
+    "globals": {
+      "o": {"type": "object", "value": {"name": "ali"}}
+    },
+    "expected": { "type": "boolean", "value": true }
+  },
+  {
+    "name": "compare: object field string ordering",
+    "code": "o.name < \"b\"",
+    "globals": {
+      "o": {"type": "object", "value": {"name": "ali"}}
+    },
+    "expected": { "type": "boolean", "value": true }
   }
 ]

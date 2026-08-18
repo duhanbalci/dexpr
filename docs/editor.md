@@ -74,7 +74,7 @@ Dil küçük olduğundan (7 keyword, ~20 operatör) iki gramer dosyasını sync 
 
 ### Keyword Yönetimi
 
-Keyword'ler `@extend` ile tanımlanır — `identifier` token'ından türetilir ama **her zaman** keyword olarak parse edilir. dexpr'de keyword'ler reserved'dır (`if`, `then`, `else`, `end`, `in`, `true`, `false`).
+Keyword'ler `@extend` ile tanımlanır — `identifier` token'ından türetilir ama **her zaman** keyword olarak parse edilir. dexpr'de keyword'ler reserved'dır (`if`, `then`, `else`, `end`, `in`, `true`, `false`, `null`).
 
 ### Error Recovery
 
@@ -95,6 +95,7 @@ Lezer GLR parser kullanır. Bozuk/yarım kod yazılırken:
 |-------|-----------|-----------------|
 | `if`, `then`, `else`, `end`, `in`, `elseIf` | `keyword` | `#7c3aed` (mor) |
 | `true`, `false` | `bool` | `#d97706` (turuncu) |
+| `null` | `null` | `#d97706` (turuncu) |
 | `"string"`, `'string'` | `string` | `#059669` (yeşil) |
 | `42`, `3.14` | `number` | `#2563eb` (mavi) |
 | `// comment`, `/* comment */` | `lineComment` / `blockComment` | `#9ca3af` (gri, italic) |

@@ -62,7 +62,8 @@ let result = vm.execute()?; // Returns last expression's value
 The dexpr language supports:
 - If/else conditionals with `if ... then ... else ... end`
 - String methods (e.g., `.upper()`, `.lower()`, `.trim()`, `.trimStart()`, `.trimEnd()`, `.split()`, `.replace()`, `.contains()`, `.startsWith()`, `.endsWith()`, `.length`, `.charAt()`, `.substring()`)
-- Arithmetic (`+`, `-`, `*`, `/`, `%`, `**`), comparison, and logical operators
+- Arithmetic (`+`, `-`, `*`, `/`, `%`, `**`), comparison, and logical operators. `==`/`!=` work on all types (structural, different types → `false`); `<`/`<=`/`>`/`>=` work on Number and String (lexicographic)
+- `null` literal (`x == null`)
 - `in` operator for membership testing (`"finans" in categories`, `5 in numbers`, `"hello" in "hello world"`, `"key" in obj`)
 - Compound assignments (`+=`, `-=`, `*=`, `/=`, `%=`)
 - Built-in `log()` function for output and `rand(min, max)` for random integers

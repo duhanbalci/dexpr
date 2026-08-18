@@ -1,4 +1,5 @@
 use crate::{ast::value::Value, bytecode::BytecodeReader, opcodes::OpCodeByte};
+use std::cmp::Ordering;
 use std::rc::Rc;
 use micromap::Map;
 use rust_decimal::{Decimal, MathematicalOps};
@@ -208,12 +209,12 @@ impl<'a> VM<'a> {
           "modulo",
         ),
         OpCodeByte::Pow => self.binary_op(|a, b| Ok(a.powd(b)), "power"),
-        OpCodeByte::Lt => self.compare_op(|a, b| a < b, "less than"),
-        OpCodeByte::Lte => self.compare_op(|a, b| a <= b, "less than or equal"),
-        OpCodeByte::Gt => self.compare_op(|a, b| a > b, "greater than"),
-        OpCodeByte::Gte => self.compare_op(|a, b| a >= b, "greater than or equal"),
-        OpCodeByte::Eq => self.compare_op(|a, b| a == b, "equal"),
-        OpCodeByte::Neq => self.compare_op(|a, b| a != b, "not equal"),
+        OpCodeByte::Lt => self.compare_op(|o| o == Ordering::Less, "less than"),
+        OpCodeByte::Lte => self.compare_op(|o| o != Ordering::Greater, "less than or equal"),
+        OpCodeByte::Gt => self.compare_op(|o| o == Ordering::Greater, "greater than"),
+        OpCodeByte::Gte => self.compare_op(|o| o != Ordering::Less, "greater than or equal"),
+        OpCodeByte::Eq => self.equality_op(false),
+        OpCodeByte::Neq => self.equality_op(true),
         OpCodeByte::Contains => self.handle_contains(),
         OpCodeByte::And => self.handle_and(),
         OpCodeByte::Or => self.handle_or(),
@@ -893,11 +894,54 @@ impl<'a> VM<'a> {
     Ok(())
   }
 
-  /// Helper for comparison operations
+  /// Helper for equality operations (`==`, `!=`).
+  /// Works on every value type via structural equality; values of different
+  /// types are never equal (no error).
+  #[inline]
+  fn equality_op(&mut self, negate: bool) -> Result<(), VMError> {
+    let dest = self
+      .reader
+      .read_register()
+      .map_err(|e| VMError::BytecodeError(e))? as usize;
+    let a = self
+      .reader
+      .read_register()
+      .map_err(|e| VMError::BytecodeError(e))? as usize;
+    let b = self
+      .reader
+      .read_register()
+      .map_err(|e| VMError::BytecodeError(e))? as usize;
+
+    #[cfg(debug_assertions)]
+    if dest >= MAX_REGISTERS || a >= MAX_REGISTERS || b >= MAX_REGISTERS {
+      return Err(VMError::RuntimeError(format!(
+        "Invalid register: dest={}, a={}, b={}",
+        dest, a, b
+      )));
+    }
+
+    let equal = self.registers[a] == self.registers[b];
+    self.registers[dest] = Value::Boolean(equal != negate);
+
+    log_debug!(
+      self,
+      "{} r{} = r{} {} r{}",
+      if negate { "not equal" } else { "equal" },
+      dest,
+      a,
+      if negate { "!=" } else { "==" },
+      b
+    );
+
+    Ok(())
+  }
+
+  /// Helper for ordering comparisons (`<`, `<=`, `>`, `>=`).
+  /// Supported on Number/Number and String/String (lexicographic byte order).
   #[inline]
   fn compare_op<F>(&mut self, op: F, op_name: &'static str) -> Result<(), VMError>
   where
-    F: FnOnce(&Decimal, &Decimal) -> bool,
+    F: FnOnce(Ordering) -> bool,
   {
     let dest = self
       .reader
@@ -920,11 +964,9 @@ impl<'a> VM<'a> {
       )));
     }
 
-    match (&self.registers[a], &self.registers[b]) {
-      (Value::Number(a_num), Value::Number(b_num)) => {
-        let result = op(a_num, b_num);
-        self.registers[dest] = Value::Boolean(result);
-      }
+    let ordering = match (&self.registers[a], &self.registers[b]) {
+      (Value::Number(a_num), Value::Number(b_num)) => a_num.cmp(b_num),
+      (Value::String(a_str), Value::String(b_str)) => a_str.as_str().cmp(b_str.as_str()),
       (a_val, b_val) => {
         return Err(VMError::InvalidOperation {
           operation: op_name,
@@ -932,7 +974,8 @@ impl<'a> VM<'a> {
           right_type: b_val.type_name(),
         });
       }
-    }
+    };
+    self.registers[dest] = Value::Boolean(op(ordering));
 
     log_debug!(self, "{} r{} = r{} {} r{}", op_name, dest, a, op_name, b);
 

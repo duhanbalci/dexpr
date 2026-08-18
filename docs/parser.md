@@ -72,6 +72,7 @@ En düşükten en yükseğe:
 | Sayı | `42`, `3.14` | `Expr::Value(Number)` |
 | String | `"hello"`, `'world'` | `Expr::Value(String)` |
 | Boolean | `true`, `false` | `Expr::Value(Boolean)` |
+| Null | `null` | `Expr::Value(Null)` |
 | Parantezli ifade | `(a + b)` | İç ifade |
 | Tekli negatif | `-x` | `Expr::UnaryOp(Neg, x)` |
 | Tekli NOT | `!flag` | `Expr::UnaryOp(Not, flag)` |
@@ -84,7 +85,7 @@ En düşükten en yükseğe:
 
 ### Ayrılmış Kelimeler
 
-`if`, `then`, `else`, `end`, `true`, `false`, `in`
+`if`, `then`, `else`, `end`, `true`, `false`, `null`, `in`
 
 ### Boşluk ve Yorumlar
 

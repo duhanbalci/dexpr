@@ -6,6 +6,7 @@ import { parser } from "./parser.js";
 const dexprHighlighting = styleTags({
   "if then else end in elseIf": tags.keyword,
   BooleanLiteral: tags.bool,
+  NullLiteral: tags.null,
   String: tags.string,
   Number: tags.number,
   LineComment: tags.lineComment,

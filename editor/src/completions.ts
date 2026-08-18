@@ -90,6 +90,7 @@ const KEYWORDS: Completion[] = [
   { label: "end", type: "keyword" },
   { label: "true", type: "keyword", detail: "Boolean" },
   { label: "false", type: "keyword", detail: "Boolean" },
+  { label: "null", type: "keyword", detail: "Null" },
   { label: "in", type: "keyword", detail: "membership test" },
 ];
 

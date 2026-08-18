@@ -1940,3 +1940,132 @@ fn test_invoice_full_scenario() {
   ]);
   assert_eq!(result, Value::Number(dec!(272760.00)));
 }
+// ==================== COMPARISON TESTS ====================
+
+fn run_expr_err(code: &str, globals: Vec<(&str, Value)>) -> String {
+  let ast = parser::program(code).expect("Failed to parse");
+  let mut compiler = Compiler::new();
+  let bytecode = compiler.compile(ast).expect("Failed to compile");
+  let mut vm = VM::new(&bytecode);
+  for (name, value) in globals {
+    vm.set_global(name, value);
+  }
+  vm.execute().unwrap_err().to_string()
+}
+
+#[test]
+fn test_compare_number_list_equality() {
+  let a = Value::NumberList(Rc::new(vec![dec!(1), dec!(2)]));
+  let b = Value::NumberList(Rc::new(vec![dec!(1), dec!(2)]));
+  let c = Value::NumberList(Rc::new(vec![dec!(1), dec!(3)]));
+  assert_eq!(
+    run_expr_with_globals("a == b", vec![("a", a.clone()), ("b", b.clone())]),
+    Value::Boolean(true)
+  );
+  assert_eq!(
+    run_expr_with_globals("a == c", vec![("a", a.clone()), ("c", c.clone())]),
+    Value::Boolean(false)
+  );
+  assert_eq!(
+    run_expr_with_globals("a != c", vec![("a", a), ("c", c)]),
+    Value::Boolean(true)
+  );
+}
+
+#[test]
+fn test_compare_string_list_equality() {
+  let a = Value::StringList(Rc::new(vec![SmolStr::new("x"), SmolStr::new("y")]));
+  let b = Value::StringList(Rc::new(vec![SmolStr::new("x"), SmolStr::new("y")]));
+  let c = Value::StringList(Rc::new(vec![SmolStr::new("y"), SmolStr::new("x")]));
+  assert_eq!(
+    run_expr_with_globals("a == b", vec![("a", a.clone()), ("b", b)]),
+    Value::Boolean(true)
+  );
+  assert_eq!(
+    run_expr_with_globals("a == c", vec![("a", a), ("c", c)]),
+    Value::Boolean(false)
+  );
+}
+
+#[test]
+fn test_compare_list_of_objects_equality() {
+  let mk = |n: i64| {
+    let mut m = IndexMap::new();
+    m.insert(SmolStr::new("id"), Value::Number(dec!(1) * rust_decimal::Decimal::from(n)));
+    Value::Object(Rc::new(m))
+  };
+  let a = Value::List(Rc::new(vec![mk(1), mk(2)]));
+  let b = Value::List(Rc::new(vec![mk(1), mk(2)]));
+  let c = Value::List(Rc::new(vec![mk(1)]));
+  assert_eq!(
+    run_expr_with_globals("a == b", vec![("a", a.clone()), ("b", b)]),
+    Value::Boolean(true)
+  );
+  assert_eq!(
+    run_expr_with_globals("a == c", vec![("a", a), ("c", c)]),
+    Value::Boolean(false)
+  );
+}
+
+#[test]
+fn test_compare_different_types_never_equal() {
+  let list = Value::NumberList(Rc::new(vec![dec!(1)]));
+  assert_eq!(
+    run_expr_with_globals("l == 1", vec![("l", list.clone())]),
+    Value::Boolean(false)
+  );
+  assert_eq!(
+    run_expr_with_globals("l == \"1\"", vec![("l", list.clone())]),
+    Value::Boolean(false)
+  );
+  assert_eq!(
+    run_expr_with_globals("l == null", vec![("l", list)]),
+    Value::Boolean(false)
+  );
+}
+
+#[test]
+fn test_compare_ordering_string_vs_number_errors() {
+  let err = run_expr_err("\"a\" < 1", vec![]);
+  assert!(err.contains("less than"), "got: {err}");
+  assert!(err.contains("String"), "got: {err}");
+  assert!(err.contains("Number"), "got: {err}");
+}
+
+#[test]
+fn test_compare_ordering_boolean_errors() {
+  let err = run_expr_err("true > false", vec![]);
+  assert!(err.contains("greater than"), "got: {err}");
+  assert!(err.contains("Boolean"), "got: {err}");
+}
+
+#[test]
+fn test_compare_ordering_null_errors() {
+  let err = run_expr_err("null <= 1", vec![]);
+  assert!(err.contains("less than or equal"), "got: {err}");
+  assert!(err.contains("Null"), "got: {err}");
+}
+
+#[test]
+fn test_compare_ordering_lists_errors() {
+  let list = Value::NumberList(Rc::new(vec![dec!(1)]));
+  let err = run_expr_err("l >= l", vec![("l", list)]);
+  assert!(err.contains("greater than or equal"), "got: {err}");
+}
+
+#[test]
+fn test_null_is_reserved_keyword() {
+  assert!(parser::program("null = 5").is_err());
+  // identifiers that merely start with "null" are still fine
+  assert_eq!(run_expr("nullable = 3\nnullable"), Value::Number(dec!(3)));
+}
+
+#[test]
+fn test_string_compare_in_condition() {
+  let code = r#"
+    grade = "B"
+    result = 0
+    if grade == "A" then result = 100 else if grade == "B" then result = 80 else result = 0 end
+  "#;
+  assert_eq!(run_and_get_result(code), Value::Number(dec!(80)));
+}

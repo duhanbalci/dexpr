@@ -41,7 +41,7 @@ var import_lr2 = require("@lezer/lr");
 var import_lr = require("@lezer/lr");
 
 // src/parser.terms.js
-var elseIf = 44;
+var elseIf = 46;
 
 // src/tokens.ts
 var CH_e = 101;
@@ -81,32 +81,33 @@ var elseIfTokenizer = new import_lr.ExternalTokenizer((input) => {
 });
 
 // src/parser.js
-var spec_identifier = { __proto__: null, if: 11, true: 21, false: 21, in: 43, then: 69, else: 71, end: 73 };
+var spec_identifier = { __proto__: null, if: 11, true: 21, false: 21, null: 25, in: 47, then: 73, else: 75, end: 77 };
 var parser = import_lr2.LRParser.deserialize({
   version: 14,
-  states: "+^Q]QQOOOOQP'#Cb'#CbOOQP'#Ce'#CeOwQQO'#CiO`QQO'#CjO#TQRO'#DTO%bQRO'#D_OOQP'#D_'#D_O%iQRO'#D_OOQP'#D]'#D]OOQP'#DU'#DUQ]QQOOOwQQO'#C`O&eQQO,59TO&lQRO'#D_O(zQRO,59UO`QQO,59XO`QQO,59XO`QQO,59XO`QQO,59XO`QQO,59XO)wQQO,59hO)|QQO'#CzOOQP,59i,59iO`QQO,59mOOQP-E7S-E7SO*TQQO,58zOOQP1G.o1G.oO+oQRO1G.sO+vQRO1G.sO-bQRO1G.sO-iQRO1G.sO.[QRO1G.sOOQP'#Cy'#CyOOQP1G/S1G/SO/[QQO'#D`OOQP,59f,59fO/fQQO,59fO/kQRO1G/XO0bQRO1G.fO0oQQO1G/SOOQP7+$i7+$iOwQQO'#DVO1pQQO,59zOOQP1G/Q1G/QO1xQRO7+$QO2TQRO7+$QOwQQO'#DWOOQP7+$Q7+$QO2bQQO7+$QO2iQQO,59qOOQO-E7T-E7TOOQP-E7U-E7UOOQP<<Gl<<GlO2sQQO<<GlO2zQRO<<GlO3VQQO,59rO2sQQO<<GlO3^QQOAN=WOOQPAN=WAN=WO3^QQOAN=WO3eQRO1G/^OOQPG22rG22rO3rQQOG22rO3yQRO7+$xOOQPLD(^LD(^O)wQQO,59hO5RQQO1G.sO5YQQO1G.sO6[QQO1G.sO6cQQO1G.sO6jQQO1G.sO7QQQO,59UOwQQO,59XOwQQO,59XOwQQO,59XOwQQO,59XOwQQO,59XOwQQO'#Cj",
-  stateData: "7n~O!OOSPOSQOS~OT[OVVOWVOYQO[RO_SO`SO!QPO~OVVOWVOYQO[RO_!pO`!pO!QPO~O_cOb`OcaOdbOebOfcOgdOhdOidOjdOleO~OTwXVwXWwXYwX[wX`wX{wX!QwXswXtwX|wX~P!`OvhOT!RXV!RXW!RXY!RX_!RX`!RXb!RXc!RXd!RXe!RXf!RXg!RXh!RXi!RXj!RXl!RX{!RX!Q!RXs!RXt!RX|!RX~O[fO~P#zO[!RX~P#zO_!nOb!kOc!lOd!mOe!mOf!nOg!oOh!oOi!oOj!oOl!dO~OZkO~P%pO[fOZ!RX_!RXb!RXc!RXd!RXe!RXf!RXg!RXh!RXi!RXj!RXl!RXT!RXV!RXW!RXY!RX`!RX{!RX!Q!RXr!RXo!RXs!RXt!RX|!RX~Ob^ac^ad^ae^af^ag^ah^ai^aj^a~O_cOleOT^aV^aW^aY^a[^a`^a{^a!Q^as^at^a|^a~P(]O!QqO~OZtO~PwOrwO~P%pO_cOdbOebOfcOgdOhdOidOjdOleOTaiVaiWaiYai[ai`aibai{ai!Qaisaitai|ai~OcaO~P*[Ocai~P*[O_cOgdOhdOidOjdOleOTaiVaiWaiYai[ai`aibaicaidaieai{ai!Qaisaitai|ai~OfcO~P+}Ofai~P+}Obaicaidaieaifaigaihaiiai~O_cOjdOleOTaiVaiWaiYai[ai`ai{ai!Qaisaitai|ai~P-pOozOZ!SX~P%pOZ|O~OTuiVuiWuiYui[ui`ui{ui!Quisuitui|ui~P!`Os!ROt!QO|!PO~P]O[fOZpi_pibpicpidpiepifpigpihpiipijpilpirpiopi~OozOZ!Sa~Os!WOt!VO|!PO~Os!WOt!VO|!PO~P]Ot!VO~P]OZyaoya~P%pOt!]O~P]Os!^Ot!]O|!PO~Or!_O~P%pOt!`O~P]Oszitzi|zi~P]Ot!cO~P]Oszqtzq|zq~P]O_!nOd!mOe!mOf!nOg!oOh!oOi!oOj!oOl!dOZaibairaioai~Oc!lO~P4WOcai~P4WO_!nOg!oOh!oOi!oOj!oOl!dOZaibaicaidaieairaioai~Of!nO~P5aOfai~P5aO_!nOj!oOl!dOZairaioai~P-pO_!nOl!dOZ^ar^ao^a~P(]OvdjgQPQh~",
-  goto: "'n!TPPPP!UP!dPP#WPPP#W#WPP#WPPPPPPPPP#WP#x$OP$V#WPPP!UP!U$y%e%kPPPP%uP&T'kiXOZw!O!R!W!Z![!^!_!a!bhUOZw!O!R!W!Z![!^!_!a!bu^RS[`abcdfhz!P!k!l!m!n!o!p!_VORSZ[`abcdfhwz!O!P!R!W!Z![!^!_!a!b!k!l!m!n!o!pQreRx!dSgU^RyxtVRS[`abcdfhz!P!k!l!m!n!o!piWOZw!O!R!W!Z![!^!_!a!bQZO[iZ!O!Z![!a!bQ!OwQ!Z!RQ![!WQ!a!^R!b!_Q{sR!T{Q}wS!U}!XR!X!OiYOZw!O!R!W!Z![!^!_!a!bhTOZw!O!R!W!Z![!^!_!a!bQ]RQ_SQj[Ql`QmaQnbQocQpdQsfQvhQ!SzQ!Y!PQ!e!kQ!f!lQ!g!mQ!h!nQ!i!oR!j!pRuf",
-  nodeNames: "\u26A0 LineComment BlockComment Program IfStatement if VariableName Number String BooleanLiteral BooleanLiteral ) ( ParenExpression UnaryExpression - ! BinaryExpression || && CompareOp in + * / % Power MethodCall . PropertyName ArgList , PropertyAccess FunctionCall then else end Assignment AssignOp ExprStatement",
-  maxTerm: 50,
+  states: "+dQ]QQOOOOQP'#Cb'#CbOOQP'#Ce'#CeOOQP'#Cg'#CgOzQQO'#CkO`QQO'#ClO#ZQRO'#DVO%nQRO'#DaOOQP'#Da'#DaO%uQRO'#DaOOQP'#D_'#D_OOQP'#DW'#DWQ]QQOOOzQQO'#C`O&qQQO,59VO&xQRO'#DaO)ZQRO,59WO`QQO,59ZO`QQO,59ZO`QQO,59ZO`QQO,59ZO`QQO,59ZO*ZQQO,59jO*`QQO'#C|OOQP,59k,59kO`QQO,59oOOQP-E7U-E7UO*gQQO,58zOOQP1G.q1G.qO,UQRO1G.uO,]QRO1G.uO-zQRO1G.uO.RQRO1G.uO.tQRO1G.uOOQP'#C{'#C{OOQP1G/U1G/UO/wQQO'#DbOOQP,59h,59hO0RQQO,59hO0WQRO1G/ZO1QQRO1G.fO1_QQO1G/UOOQP7+$k7+$kOzQQO'#DXO2`QQO,59|OOQP1G/S1G/SO2hQRO7+$QO2sQRO7+$QOzQQO'#DYOOQP7+$Q7+$QO3QQQO7+$QO3XQQO,59sOOQO-E7V-E7VOOQP-E7W-E7WOOQP<<Gl<<GlO3cQQO<<GlO3jQRO<<GlO3uQQO,59tO3cQQO<<GlO3|QQOAN=WOOQPAN=WAN=WO3|QQOAN=WO4TQRO1G/`OOQPG22rG22rO4bQQOG22rO4iQRO7+$zOOQPLD(^LD(^O*ZQQO,59jO5qQQO1G.uO5xQQO1G.uO6zQQO1G.uO7RQQO1G.uO7YQQO1G.uO7pQQO,59WOzQQO,59ZOzQQO,59ZOzQQO,59ZOzQQO,59ZOzQQO,59ZOzQQO'#Cl",
+  stateData: "8^~O!QOSPOSQOS~OT]OVWOWWOYQO[RO^SOaTObTO!SPO~OVWOWWOYQO[RO^SOa!qOb!qO!SPO~OadOdaOebOfcOgcOhdOieOjeOkeOleOnfO~OTyXVyXWyXYyX[yX^yXbyX}yX!SyXuyXvyX!OyX~P!fOxiOT!TXV!TXW!TXY!TX[!TXa!TXb!TXd!TXe!TXf!TXg!TXh!TXi!TXj!TXk!TXl!TXn!TX}!TX!S!TXu!TXv!TX!O!TX~O^gO~P$TO^!TX~P$TOa!oOd!lOe!mOf!nOg!nOh!oOi!pOj!pOk!pOl!pOn!eO~O]lO~P%|O^gO]!TXa!TXd!TXe!TXf!TXg!TXh!TXi!TXj!TXk!TXl!TXn!TXT!TXV!TXW!TXY!TX[!TXb!TX}!TX!S!TXt!TXq!TXu!TXv!TX!O!TX~Od`ae`af`ag`ah`ai`aj`ak`al`a~OadOnfOT`aV`aW`aY`a[`a^`ab`a}`a!S`au`av`a!O`a~P(lO!SrO~O]uO~PzOtxO~P%|OadOfcOgcOhdOieOjeOkeOleOnfOTciVciWciYci[ci^cibcidci}ci!Sciucivci!Oci~OebO~P*nOeci~P*nOadOieOjeOkeOleOnfOTciVciWciYci[ci^cibcidciecifcigci}ci!Sciucivci!Oci~OhdO~P,dOhci~P,dOdciecifcigcihciicijcikci~OadOleOnfOTciVciWciYci[ci^cibci}ci!Sciucivci!Oci~P.YOq{O]!UX~P%|O]}O~OTwiVwiWwiYwi[wi^wibwi}wi!Swiuwivwi!Owi~P!fOu!SOv!RO!O!QO~P]O^gO]riaridrierifrigrihriirijrikrilrinritriqri~Oq{O]!Ua~Ou!XOv!WO!O!QO~Ou!XOv!WO!O!QO~P]Ov!WO~P]O]{aq{a~P%|Ov!^O~P]Ou!_Ov!^O!O!QO~Ot!`O~P%|Ov!aO~P]Ou|iv|i!O|i~P]Ov!dO~P]Ou|qv|q!O|q~P]Oa!oOf!nOg!nOh!oOi!pOj!pOk!pOl!pOn!eO]cidcitciqci~Oe!mO~P4vOeci~P4vOa!oOi!pOj!pOk!pOl!pOn!eO]cidciecifcigcitciqci~Oh!oO~P6POhci~P6POa!oOl!pOn!eO]citciqci~P.YOa!oOn!eO]`at`aq`a~P(lOxfliQPQj~",
+  goto: "'p!VPPPP!WP!fPP#YP#YPPP#Y#YPP#YPPPPPPPPP#YP#z$QP$X#YPPP!WP!W${%g%mPPPP%wP&V'miYO[x!P!S!X![!]!_!`!b!chVO[x!P!S!X![!]!_!`!b!cu_ST]abcdegi{!Q!l!m!n!o!p!q!_WOST[]abcdegix{!P!Q!S!X![!]!_!`!b!c!l!m!n!o!p!qQsfRy!eShV_RzytWST]abcdegi{!Q!l!m!n!o!p!qiXO[x!P!S!X![!]!_!`!b!cQ[O[j[!P![!]!b!cQ!PxQ![!SQ!]!XQ!b!_R!c!`Q|tR!U|Q!OxS!V!O!YR!Y!PiZO[x!P!S!X![!]!_!`!b!chUO[x!P!S!X![!]!_!`!b!cQ^SQ`TQk]QmaQnbQocQpdQqeQtgQwiQ!T{Q!Z!QQ!f!lQ!g!mQ!h!nQ!i!oQ!j!pR!k!qRvg",
+  nodeNames: "\u26A0 LineComment BlockComment Program IfStatement if VariableName Number String BooleanLiteral BooleanLiteral NullLiteral NullLiteral ) ( ParenExpression UnaryExpression - ! BinaryExpression || && CompareOp in + * / % Power MethodCall . PropertyName ArgList , PropertyAccess FunctionCall then else end Assignment AssignOp ExprStatement",
+  maxTerm: 52,
   nodeProps: [
-    ["group", -3, 4, 37, 39, "Statement", -10, 6, 7, 8, 9, 13, 14, 17, 27, 32, 33, "Expression"],
-    ["openedBy", 11, "("],
-    ["closedBy", 12, ")"]
+    ["group", -3, 4, 39, 41, "Statement", -11, 6, 7, 8, 9, 11, 15, 16, 19, 29, 34, 35, "Expression"],
+    ["openedBy", 13, "("],
+    ["closedBy", 14, ")"]
   ],
   skippedNodes: [0, 1, 2],
   repeatNodeCount: 3,
-  tokenData: "+p~RiXY!pYZ!p]^!ppq!pqr#Rrs#`uv%Svw%awx%lxy'Zyz'`z{'e{|'u|}'}}!O(S!O!P([!P!Q(a!Q![*X!^!_*r!_!`*z!`!a*r!c!}+S#R#S+S#T#o+S#p#q+e~!uS!O~XY!pYZ!p]^!ppq!p~#WP`~!_!`#Z~#`Od~~#cWOY#`Zr#`rs#{s#O#`#O#P$Q#P;'S#`;'S;=`$|<%lO#`~$QOW~~$TRO;'S#`;'S;=`$^;=`O#`~$aXOY#`Zr#`rs#{s#O#`#O#P$Q#P;'S#`;'S;=`$|;=`<%l#`<%lO#`~%PP;=`<%l#`~%XPi~!_!`%[~%aOv~~%dPvw%g~%lOc~~%oWOY%lZw%lwx#{x#O%l#O#P&X#P;'S%l;'S;=`'T<%lO%l~&[RO;'S%l;'S;=`&e;=`O%l~&hXOY%lZw%lwx#{x#O%l#O#P&X#P;'S%l;'S;=`'T;=`<%l%l<%lO%l~'WP;=`<%l%l~'`O[~~'eOZ~~'jQg~z{'p!_!`%[~'uOj~~'zPf~!_!`%[~(SOo~~(XP_~!_!`%[~(aOl~~(fRh~z{(o!P!Q)p!_!`%[~(rTOz(oz{)R{;'S(o;'S;=`)j<%lO(o~)UTO!P(o!P!Q)e!Q;'S(o;'S;=`)j<%lO(o~)jOQ~~)mP;=`<%l(o~)uSP~OY)pZ;'S)p;'S;=`*R<%lO)p~*UP;=`<%l)p~*^QV~!O!P*d!Q![*X~*gP!Q![*j~*oPV~!Q![*j~*wPd~!_!`#Z~+PPv~!_!`#Z~+XS!Q~!Q![+S!c!}+S#R#S+S#T#o+S~+hP#p#q+k~+pOb~",
+  tokenData: "+p~RiXY!pYZ!p]^!ppq!pqr#Rrs#`uv%Svw%awx%lxy'Zyz'`z{'e{|'u|}'}}!O(S!O!P([!P!Q(a!Q![*X!^!_*r!_!`*z!`!a*r!c!}+S#R#S+S#T#o+S#p#q+e~!uS!Q~XY!pYZ!p]^!ppq!p~#WPb~!_!`#Z~#`Of~~#cWOY#`Zr#`rs#{s#O#`#O#P$Q#P;'S#`;'S;=`$|<%lO#`~$QOW~~$TRO;'S#`;'S;=`$^;=`O#`~$aXOY#`Zr#`rs#{s#O#`#O#P$Q#P;'S#`;'S;=`$|;=`<%l#`<%lO#`~%PP;=`<%l#`~%XPk~!_!`%[~%aOx~~%dPvw%g~%lOe~~%oWOY%lZw%lwx#{x#O%l#O#P&X#P;'S%l;'S;=`'T<%lO%l~&[RO;'S%l;'S;=`&e;=`O%l~&hXOY%lZw%lwx#{x#O%l#O#P&X#P;'S%l;'S;=`'T;=`<%l%l<%lO%l~'WP;=`<%l%l~'`O^~~'eO]~~'jQi~z{'p!_!`%[~'uOl~~'zPh~!_!`%[~(SOq~~(XPa~!_!`%[~(aOn~~(fRj~z{(o!P!Q)p!_!`%[~(rTOz(oz{)R{;'S(o;'S;=`)j<%lO(o~)UTO!P(o!P!Q)e!Q;'S(o;'S;=`)j<%lO(o~)jOQ~~)mP;=`<%l(o~)uSP~OY)pZ;'S)p;'S;=`*R<%lO)p~*UP;=`<%l)p~*^QV~!O!P*d!Q![*X~*gP!Q![*j~*oPV~!Q![*j~*wPf~!_!`#Z~+PPx~!_!`#Z~+XS!S~!Q![+S!c!}+S#R#S+S#T#o+S~+hP#p#q+k~+pOd~",
   tokenizers: [elseIfTokenizer, 0],
   topRules: { "Program": [0, 3] },
-  specialized: [{ term: 48, get: (value) => spec_identifier[value] || -1 }],
-  tokenPrec: 1033
+  specialized: [{ term: 50, get: (value) => spec_identifier[value] || -1 }],
+  tokenPrec: 1063
 });
 
 // src/language.ts
 var dexprHighlighting = (0, import_highlight.styleTags)({
   "if then else end in elseIf": import_highlight.tags.keyword,
   BooleanLiteral: import_highlight.tags.bool,
+  NullLiteral: import_highlight.tags.null,
   String: import_highlight.tags.string,
   Number: import_highlight.tags.number,
   LineComment: import_highlight.tags.lineComment,
@@ -165,6 +166,7 @@ var KEYWORDS = [
   { label: "end", type: "keyword" },
   { label: "true", type: "keyword", detail: "Boolean" },
   { label: "false", type: "keyword", detail: "Boolean" },
+  { label: "null", type: "keyword", detail: "Null" },
   { label: "in", type: "keyword", detail: "membership test" }
 ];
 function inferVariableTypes(context, knownVars) {
@@ -224,6 +226,10 @@ function inferExprType(node, doc, knownTypes) {
         const rootType = knownTypes.get(varName);
         if (rootType === "Object") {
           return knownTypes.get(`${varName}.${fieldName}`) ?? null;
+        }
+        if (rootType === "List") {
+          const fieldType = knownTypes.get(`${varName}.${fieldName}`) ?? null;
+          return projectedListType(fieldType);
         }
       }
       return null;
@@ -298,6 +304,11 @@ function inferMethodReturnType(method) {
       return null;
   }
 }
+function projectedListType(fieldType) {
+  if (fieldType === "Number") return "NumberList";
+  if (fieldType === "String") return "StringList";
+  return "List";
+}
 function dedup(items) {
   const seen = /* @__PURE__ */ new Set();
   return items.filter((item) => {
@@ -367,12 +378,16 @@ function dexprCompletion(info) {
     if (path.length === 1) return { type: rootType, path };
     let currentType = rootType;
     for (let i = 1; i < path.length; i++) {
-      if (currentType !== "Object") {
+      if (currentType === "Object") {
+        const key = `${path[i - 1]}.${path[i]}`;
+        currentType = varTypes.get(key) ?? null;
+      } else if (currentType === "List") {
+        const key = `${path[0]}.${path[i]}`;
+        const fieldType = varTypes.get(key) ?? null;
+        currentType = projectedListType(fieldType);
+      } else {
         return { type: currentType, path };
       }
-      const key = `${path[i - 1]}.${path[i]}`;
-      const fieldType = varTypes.get(key) ?? null;
-      currentType = fieldType;
     }
     return { type: currentType, path };
   }
@@ -403,8 +418,9 @@ function dexprCompletion(info) {
         options = [...fieldItems, ...objMethods];
       } else if (finalType === "List") {
         const rootVarName = path[0];
+        const fieldItems = objectFieldCompletions.get(rootVarName) ?? [];
         const listMethods = methodsByType["List"] ?? [];
-        options = [...listMethods];
+        options = [...fieldItems, ...listMethods];
       } else if (finalType) {
         options = methodsByType[finalType] ?? allMethods;
       } else {
@@ -436,6 +452,7 @@ var import_highlight2 = require("@lezer/highlight");
 var dexprHighlightStyle = import_language3.HighlightStyle.define([
   { tag: import_highlight2.tags.keyword, color: "#7c3aed" },
   { tag: import_highlight2.tags.bool, color: "#d97706" },
+  { tag: import_highlight2.tags.null, color: "#d97706" },
   { tag: import_highlight2.tags.string, color: "#059669" },
   { tag: import_highlight2.tags.number, color: "#2563eb" },
   { tag: import_highlight2.tags.lineComment, color: "#9ca3af", fontStyle: "italic" },

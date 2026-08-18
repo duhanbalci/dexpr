@@ -121,6 +121,7 @@ pub grammar parser() for str {
   rule boolean_literal() -> Value
     = "true" { Value::Boolean(true) }
     / "false" { Value::Boolean(false) }
+    / "null" { Value::Null }
 
 
   pub rule expr_stmt() -> Stmt
@@ -164,7 +165,7 @@ pub grammar parser() for str {
     / "%=" { Op::Mod }
 
   rule keyword()
-  = ("if" / "then" / "else" / "end" / "true" / "false" / "in") !['a'..='z' | 'A'..='Z' | '0'..='9' | '_']
+  = ("if" / "then" / "else" / "end" / "true" / "false" / "null" / "in") !['a'..='z' | 'A'..='Z' | '0'..='9' | '_']
 
   rule identifier() -> SmolStr
   = !keyword() s:$(['a'..='z' | 'A'..='Z' | '_']['a'..='z' | 'A'..='Z' | '0'..='9' | '_']*)

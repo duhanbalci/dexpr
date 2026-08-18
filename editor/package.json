@@ -1,6 +1,6 @@
 {
   "name": "@duhanbalci/codemirror-lang-dexpr",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "CodeMirror 6 language support for dexpr",
   "type": "module",
   "main": "dist/index.cjs",
